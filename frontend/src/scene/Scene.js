@@ -185,6 +185,10 @@ export class RocketScene {
         // Update camera controls
         this.cameraController.update();
 
+        // Update rocket and marker scales based on camera distance
+        this.rocket.updateScale(this.camera);
+        this.earth.updateMarkerScales(this.camera);
+
         // Slowly rotate Earth (optional)
         // this.earth.getObject().rotation.y += 0.0001;
 
@@ -203,6 +207,9 @@ export class RocketScene {
         // Add point to trajectory
         if (state.position && state.altitude !== undefined) {
             this.trajectory.addPoint(state.position, state.altitude);
+
+            // Update camera with altitude and velocity for automatic view switching
+            this.cameraController.updateAltitude(state.altitude, state.velocity);
         }
     }
 
@@ -223,6 +230,14 @@ export class RocketScene {
         this.trajectory.clear();
         this.orbitPrediction.hide();
         this.cameraController.reset();
+    }
+
+    /**
+     * Start rocket-following camera mode for launch.
+     * Camera will automatically switch to Earth view at 100km altitude.
+     */
+    startRocketFollow() {
+        this.cameraController.setRocketFollowMode(this.rocket.getObject());
     }
 
     /**

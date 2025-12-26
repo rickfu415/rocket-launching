@@ -12,6 +12,7 @@ export class Earth {
         this.mesh = null;
         this.atmosphere = null;
         this.group = new THREE.Group();
+        this.markers = [];  // Track markers for dynamic scaling
 
         this._createEarth();
         this._createAtmosphere();
@@ -184,7 +185,35 @@ export class Earth {
         marker.position.set(x * 1.01, y * 1.01, z * 1.01);
         this.group.add(marker);
 
+        // Track marker for dynamic scaling
+        this.markers.push(marker);
+
         return marker;
+    }
+
+    /**
+     * Update marker scales based on camera distance.
+     * Maintains roughly constant screen size regardless of zoom level.
+     *
+     * @param {THREE.Camera} camera - The camera to calculate distance from
+     */
+    updateMarkerScales(camera) {
+        if (!camera) return;
+
+        for (const marker of this.markers) {
+            // Calculate distance from camera to marker
+            const distance = camera.position.distanceTo(marker.position);
+
+            // Scale proportionally to distance to maintain constant screen size
+            const baseDistance = 2.0;  // Reference distance where scale = 1
+            const minScale = 0.1;
+            const maxScale = 10.0;
+
+            let scaleFactor = distance / baseDistance;
+            scaleFactor = Math.max(minScale, Math.min(maxScale, scaleFactor));
+
+            marker.scale.setScalar(scaleFactor);
+        }
     }
 
     /**

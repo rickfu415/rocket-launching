@@ -41,6 +41,7 @@ export class SimulationState {
             event: [],
             complete: [],
             reset: [],
+            start: [],
         };
     }
 
@@ -98,6 +99,8 @@ export class SimulationState {
         this.events = [];
         this.orbit = null;
         this.success = null;
+
+        this._notify('start', {});
     }
 
     /**

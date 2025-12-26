@@ -56,6 +56,8 @@ class RocketSimulatorApp {
         this.state.on('reset', () => {
             this.scene.reset();
         });
+
+        // No automatic camera movement - user controls the view
     }
 
     _onState(data) {

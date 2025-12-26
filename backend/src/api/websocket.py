@@ -21,6 +21,7 @@ class SimulationManager:
 
     def __init__(self):
         self.active_simulations: dict[WebSocket, Simulator] = {}
+        self.streaming_tasks: dict[WebSocket, asyncio.Task] = {}
 
     async def handle_connection(self, websocket: WebSocket):
         """Handle a new WebSocket connection."""
@@ -47,9 +48,21 @@ class SimulationManager:
 
         except WebSocketDisconnect:
             # Clean up simulation if running
-            if websocket in self.active_simulations:
-                self.active_simulations[websocket].stop()
-                del self.active_simulations[websocket]
+            await self._cleanup_simulation(websocket)
+
+    async def _cleanup_simulation(self, websocket: WebSocket):
+        """Clean up simulation and streaming task for a websocket."""
+        if websocket in self.streaming_tasks:
+            self.streaming_tasks[websocket].cancel()
+            try:
+                await self.streaming_tasks[websocket]
+            except asyncio.CancelledError:
+                pass
+            del self.streaming_tasks[websocket]
+
+        if websocket in self.active_simulations:
+            self.active_simulations[websocket].stop()
+            del self.active_simulations[websocket]
 
     async def process_command(self, websocket: WebSocket, command: dict):
         """Process a command from the client."""
@@ -58,11 +71,11 @@ class SimulationManager:
         if action == "start":
             await self.start_simulation(websocket, command)
         elif action == "pause":
-            self.pause_simulation(websocket)
+            await self.pause_simulation(websocket)
         elif action == "resume":
-            self.resume_simulation(websocket)
+            await self.resume_simulation(websocket)
         elif action == "stop":
-            self.stop_simulation(websocket)
+            await self.stop_simulation(websocket)
         elif action == "set_speed":
             self.set_speed(websocket, command.get("speed", 1.0))
         else:
@@ -74,9 +87,7 @@ class SimulationManager:
     async def start_simulation(self, websocket: WebSocket, command: dict):
         """Start a new simulation."""
         # Stop any existing simulation
-        if websocket in self.active_simulations:
-            self.active_simulations[websocket].stop()
-            del self.active_simulations[websocket]
+        await self._cleanup_simulation(websocket)
 
         # Get rocket configuration
         rocket_name = command.get("rocket", "falcon9")
@@ -122,7 +133,12 @@ class SimulationManager:
             "rocket": rocket.to_dict(),
         })
 
-        # Run simulation and stream results
+        # Start streaming in a background task so we can receive commands
+        task = asyncio.create_task(self._stream_simulation(websocket, simulator))
+        self.streaming_tasks[websocket] = task
+
+    async def _stream_simulation(self, websocket: WebSocket, simulator: Simulator):
+        """Stream simulation states to the client."""
         try:
             async for state_data in simulator.stream_states(update_interval=0.05):
                 await websocket.send_json(state_data)
@@ -131,6 +147,9 @@ class SimulationManager:
                 if websocket not in self.active_simulations:
                     break
 
+        except asyncio.CancelledError:
+            # Task was cancelled (stop was called)
+            pass
         except Exception as e:
             await websocket.send_json({
                 "type": "error",
@@ -139,6 +158,8 @@ class SimulationManager:
         finally:
             if websocket in self.active_simulations:
                 del self.active_simulations[websocket]
+            if websocket in self.streaming_tasks:
+                del self.streaming_tasks[websocket]
 
     def _build_custom_rocket(self, config: dict) -> Rocket:
         """Build a rocket from custom configuration."""
@@ -167,21 +188,50 @@ class SimulationManager:
             launch_site=config.get("launch_site", "cape_canaveral"),
         )
 
-    def pause_simulation(self, websocket: WebSocket):
+    async def pause_simulation(self, websocket: WebSocket):
         """Pause an active simulation."""
         if websocket in self.active_simulations:
             self.active_simulations[websocket].pause()
+            await websocket.send_json({
+                "type": "info",
+                "message": "Simulation paused",
+            })
 
-    def resume_simulation(self, websocket: WebSocket):
+    async def resume_simulation(self, websocket: WebSocket):
         """Resume a paused simulation."""
         if websocket in self.active_simulations:
             self.active_simulations[websocket].resume()
+            await websocket.send_json({
+                "type": "info",
+                "message": "Simulation resumed",
+            })
 
-    def stop_simulation(self, websocket: WebSocket):
+    async def stop_simulation(self, websocket: WebSocket):
         """Stop an active simulation."""
         if websocket in self.active_simulations:
+            # Stop the simulator
             self.active_simulations[websocket].stop()
-            del self.active_simulations[websocket]
+
+            # Cancel the streaming task
+            if websocket in self.streaming_tasks:
+                self.streaming_tasks[websocket].cancel()
+                try:
+                    await self.streaming_tasks[websocket]
+                except asyncio.CancelledError:
+                    pass
+                if websocket in self.streaming_tasks:
+                    del self.streaming_tasks[websocket]
+
+            if websocket in self.active_simulations:
+                del self.active_simulations[websocket]
+
+            # Send confirmation that simulation was stopped
+            await websocket.send_json({
+                "type": "complete",
+                "success": False,
+                "reason": "Simulation aborted by user",
+                "orbit": None,
+            })
 
     def set_speed(self, websocket: WebSocket, speed: float):
         """Set simulation speed multiplier."""

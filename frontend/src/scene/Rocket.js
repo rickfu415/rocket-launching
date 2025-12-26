@@ -2,6 +2,7 @@
  * Rocket marker for Three.js scene.
  *
  * Represents the rocket as a simple 3D marker with exhaust trail.
+ * Size adjusts dynamically based on camera distance.
  */
 
 import * as THREE from 'three';
@@ -14,6 +15,12 @@ export class Rocket {
         this.mesh = null;
         this.exhaust = null;
         this.light = null;
+
+        // Base sizes for scaling
+        this.baseRocketRadius = 0.008;
+        this.baseRocketHeight = 0.03;
+        this.baseExhaustRadius = 0.006;
+        this.baseExhaustHeight = 0.04;
 
         this._createRocket();
         this._createExhaust();
@@ -110,12 +117,45 @@ export class Rocket {
     }
 
     /**
+     * Update rocket scale based on camera distance.
+     * Maintains roughly constant screen size regardless of zoom level.
+     *
+     * @param {THREE.Camera} camera - The camera to calculate distance from
+     */
+    updateScale(camera) {
+        if (!this.visible || !camera) return;
+
+        // Calculate distance from camera to rocket
+        const distance = camera.position.distanceTo(this.group.position);
+
+        // Scale proportionally to distance to maintain constant screen size
+        // At distance 1.0, scale = 1.0 (base size)
+        // At distance 0.1 (close), scale = 0.1 (smaller in world, same on screen)
+        // At distance 10 (far), scale = 10 (larger in world, same on screen)
+        const baseDistance = 2.0;  // Reference distance where scale = 1
+        const minScale = 0.1;
+        const maxScale = 10.0;
+
+        let scaleFactor = distance / baseDistance;
+        scaleFactor = Math.max(minScale, Math.min(maxScale, scaleFactor));
+
+        // Apply scale to mesh and exhaust
+        this.mesh.scale.setScalar(scaleFactor);
+        this.exhaust.scale.setScalar(scaleFactor);
+
+        // Adjust exhaust position based on scale
+        this.exhaust.position.y = -0.025 * scaleFactor;
+    }
+
+    /**
      * Reset rocket to invisible state.
      */
     reset() {
         this.visible = false;
         this.group.visible = false;
         this.group.position.set(0, 0, 0);
+        this.mesh.scale.setScalar(1);
+        this.exhaust.scale.setScalar(1);
     }
 
     /**
