@@ -1,0 +1,327 @@
+/* Reset and base styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: #0a0a0f;
+    color: #e0e0e0;
+    overflow: hidden;
+}
+
+#app {
+    width: 100vw;
+    height: 100vh;
+    position: relative;
+}
+
+/* 3D Scene Container */
+#scene-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+}
+
+/* Control Panel - Left Side */
+#control-panel {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    width: 280px;
+    background: rgba(15, 15, 25, 0.9);
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 20px;
+    z-index: 100;
+    backdrop-filter: blur(10px);
+}
+
+#control-panel h1 {
+    font-size: 1.3em;
+    margin-bottom: 20px;
+    color: #00d4ff;
+    text-align: center;
+}
+
+.control-section {
+    margin-bottom: 15px;
+}
+
+.control-section h3 {
+    font-size: 0.85em;
+    color: #888;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+select, input[type="number"] {
+    width: 100%;
+    padding: 8px 12px;
+    background: #1a1a2a;
+    border: 1px solid #333;
+    border-radius: 4px;
+    color: #fff;
+    font-size: 0.95em;
+}
+
+select:focus, input:focus {
+    outline: none;
+    border-color: #00d4ff;
+}
+
+input[type="range"] {
+    width: 100%;
+    margin: 8px 0;
+}
+
+label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 0.9em;
+}
+
+/* Buttons */
+.button-group {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.btn {
+    flex: 1;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.9em;
+    transition: all 0.2s;
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #00d4ff, #0099cc);
+    color: #000;
+}
+
+.btn-primary:hover:not(:disabled) {
+    background: linear-gradient(135deg, #33ddff, #00aadd);
+}
+
+.btn-danger {
+    background: #cc3333;
+    color: #fff;
+}
+
+.btn-danger:hover:not(:disabled) {
+    background: #dd4444;
+}
+
+.btn:not(.btn-primary):not(.btn-danger) {
+    background: #333;
+    color: #fff;
+}
+
+.btn:not(.btn-primary):not(.btn-danger):hover:not(:disabled) {
+    background: #444;
+}
+
+/* Status Display */
+#status-display {
+    margin-top: 15px;
+    padding: 10px;
+    background: #1a1a2a;
+    border-radius: 4px;
+    text-align: center;
+}
+
+#status-text {
+    font-weight: 600;
+    color: #00d4ff;
+}
+
+/* Telemetry Panel - Right Side */
+#telemetry-panel {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 250px;
+    background: rgba(15, 15, 25, 0.9);
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 20px;
+    z-index: 100;
+    backdrop-filter: blur(10px);
+}
+
+#telemetry-panel h2 {
+    font-size: 1.1em;
+    margin-bottom: 15px;
+    color: #00d4ff;
+    text-align: center;
+}
+
+.telemetry-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #222;
+}
+
+.telemetry-row:last-child {
+    border-bottom: none;
+}
+
+.telemetry-row .label {
+    color: #888;
+    font-size: 0.85em;
+}
+
+.telemetry-row .value {
+    font-family: 'Courier New', monospace;
+    font-weight: 600;
+    color: #fff;
+}
+
+/* Progress bar for fuel */
+.progress-bar {
+    width: 100px;
+    height: 10px;
+    background: #1a1a2a;
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #00d4ff, #00ff88);
+    transition: width 0.1s;
+}
+
+/* Event Panel - Bottom Right */
+#event-panel {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    width: 300px;
+    max-height: 200px;
+    background: rgba(15, 15, 25, 0.9);
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 15px;
+    z-index: 100;
+    backdrop-filter: blur(10px);
+    overflow-y: auto;
+}
+
+#event-panel h2 {
+    font-size: 1em;
+    margin-bottom: 10px;
+    color: #00d4ff;
+}
+
+#event-log {
+    font-size: 0.85em;
+}
+
+.event-item {
+    padding: 5px 0;
+    border-bottom: 1px solid #222;
+    display: flex;
+    gap: 10px;
+}
+
+.event-time {
+    color: #888;
+    font-family: monospace;
+    min-width: 70px;
+}
+
+.event-name {
+    color: #ffcc00;
+}
+
+.event-name.success {
+    color: #00ff88;
+}
+
+.event-name.failure {
+    color: #ff4444;
+}
+
+/* Orbit Panel */
+#orbit-panel {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    width: 280px;
+    background: rgba(15, 15, 25, 0.9);
+    border: 1px solid #00ff88;
+    border-radius: 8px;
+    padding: 20px;
+    z-index: 100;
+    backdrop-filter: blur(10px);
+}
+
+#orbit-panel.hidden {
+    display: none;
+}
+
+#orbit-panel h2 {
+    font-size: 1.1em;
+    margin-bottom: 15px;
+    color: #00ff88;
+    text-align: center;
+}
+
+.orbit-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 5px 0;
+}
+
+.orbit-row .label {
+    color: #888;
+}
+
+.orbit-row .value {
+    font-family: monospace;
+    color: #fff;
+}
+
+/* Time scale display */
+#time-scale-value {
+    display: inline-block;
+    margin-left: 10px;
+    color: #00d4ff;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+    width: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: #1a1a2a;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #444;
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}

@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rocket Launch Simulator</title>
+    <link rel="stylesheet" href="/styles/main.css">
+</head>
+<body>
+    <div id="app">
+        <!-- 3D Visualization Container -->
+        <div id="scene-container"></div>
+
+        <!-- Control Panel -->
+        <div id="control-panel">
+            <h1>Rocket Launch Simulator</h1>
+
+            <div class="control-section">
+                <h3>Rocket Selection</h3>
+                <select id="rocket-select">
+                    <option value="falcon9">Falcon 9 Block 5</option>
+                    <option value="saturn_v">Saturn V</option>
+                    <option value="electron">Electron</option>
+                    <option value="starship">Starship</option>
+                </select>
+            </div>
+
+            <div class="control-section">
+                <h3>Payload Mass (kg)</h3>
+                <input type="number" id="payload-mass" value="15000" min="0" max="150000">
+            </div>
+
+            <div class="control-section">
+                <h3>Target Orbit</h3>
+                <label>
+                    Altitude (km):
+                    <input type="number" id="target-altitude" value="400" min="100" max="2000">
+                </label>
+                <label>
+                    Inclination (deg):
+                    <input type="number" id="target-inclination" value="28.5" min="0" max="180">
+                </label>
+            </div>
+
+            <div class="control-section">
+                <h3>Simulation Speed</h3>
+                <input type="range" id="time-scale" min="1" max="20" value="5">
+                <span id="time-scale-value">5x</span>
+            </div>
+
+            <div class="button-group">
+                <button id="btn-start" class="btn btn-primary">Launch</button>
+                <button id="btn-pause" class="btn" disabled>Pause</button>
+                <button id="btn-stop" class="btn btn-danger" disabled>Abort</button>
+            </div>
+
+            <div id="status-display">
+                <span id="status-text">Ready</span>
+            </div>
+        </div>
+
+        <!-- Telemetry Panel -->
+        <div id="telemetry-panel">
+            <h2>Telemetry</h2>
+
+            <div class="telemetry-row">
+                <span class="label">T+</span>
+                <span id="tel-time" class="value">00:00:00</span>
+            </div>
+
+            <div class="telemetry-row">
+                <span class="label">Altitude</span>
+                <span id="tel-altitude" class="value">0 km</span>
+            </div>
+
+            <div class="telemetry-row">
+                <span class="label">Velocity</span>
+                <span id="tel-velocity" class="value">0 m/s</span>
+            </div>
+
+            <div class="telemetry-row">
+                <span class="label">Acceleration</span>
+                <span id="tel-acceleration" class="value">0 g</span>
+            </div>
+
+            <div class="telemetry-row">
+                <span class="label">Stage</span>
+                <span id="tel-stage" class="value">1</span>
+            </div>
+
+            <div class="telemetry-row">
+                <span class="label">Fuel</span>
+                <div class="progress-bar">
+                    <div id="fuel-bar" class="progress-fill" style="width: 100%"></div>
+                </div>
+            </div>
+
+            <div class="telemetry-row">
+                <span class="label">Dyn. Pressure</span>
+                <span id="tel-dynamic-pressure" class="value">0 kPa</span>
+            </div>
+
+            <div class="telemetry-row">
+                <span class="label">Flight Path</span>
+                <span id="tel-flight-path" class="value">90.0°</span>
+            </div>
+        </div>
+
+        <!-- Event Log -->
+        <div id="event-panel">
+            <h2>Events</h2>
+            <div id="event-log"></div>
+        </div>
+
+        <!-- Orbit Info (shown after simulation) -->
+        <div id="orbit-panel" class="hidden">
+            <h2>Orbit Achieved</h2>
+            <div class="orbit-info">
+                <div class="orbit-row">
+                    <span class="label">Periapsis</span>
+                    <span id="orbit-periapsis" class="value">-- km</span>
+                </div>
+                <div class="orbit-row">
+                    <span class="label">Apoapsis</span>
+                    <span id="orbit-apoapsis" class="value">-- km</span>
+                </div>
+                <div class="orbit-row">
+                    <span class="label">Inclination</span>
+                    <span id="orbit-inclination" class="value">--°</span>
+                </div>
+                <div class="orbit-row">
+                    <span class="label">Period</span>
+                    <span id="orbit-period" class="value">-- min</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+</body>
+</html>
