@@ -8,11 +8,83 @@
 </head>
 <body>
     <div id="app">
+        <!-- Starting Menu Overlay -->
+        <div id="start-menu">
+            <div class="menu-content">
+                <div class="menu-header">
+                    <h1 class="menu-title">Rocket Launch Simulator</h1>
+                    <p class="menu-subtitle">Experience realistic orbital mechanics</p>
+                </div>
+
+                <div class="menu-section">
+                    <h3>Select Rocket</h3>
+                    <div class="rocket-cards" id="rocket-cards">
+                        <div class="rocket-card selected" data-rocket="falcon9">
+                            <div class="rocket-icon">🚀</div>
+                            <div class="rocket-name">Falcon 9</div>
+                            <div class="rocket-stats">LEO: 22,800 kg</div>
+                        </div>
+                        <div class="rocket-card" data-rocket="saturn_v">
+                            <div class="rocket-icon">🌙</div>
+                            <div class="rocket-name">Saturn V</div>
+                            <div class="rocket-stats">LEO: 140,000 kg</div>
+                        </div>
+                        <div class="rocket-card" data-rocket="electron">
+                            <div class="rocket-icon">⚡</div>
+                            <div class="rocket-name">Electron</div>
+                            <div class="rocket-stats">LEO: 300 kg</div>
+                        </div>
+                        <div class="rocket-card" data-rocket="starship">
+                            <div class="rocket-icon">🌟</div>
+                            <div class="rocket-name">Starship</div>
+                            <div class="rocket-stats">LEO: 150,000 kg</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="menu-section">
+                    <h3>Mission Parameters</h3>
+                    <div class="menu-params">
+                        <div class="param-group">
+                            <label for="menu-payload">Payload Mass (kg)</label>
+                            <input type="number" id="menu-payload" value="15000" min="0" max="150000">
+                        </div>
+                        <div class="param-group">
+                            <label for="menu-altitude">Target Altitude (km)</label>
+                            <input type="number" id="menu-altitude" value="400" min="100" max="2000">
+                        </div>
+                        <div class="param-group">
+                            <label for="menu-inclination">Inclination (deg)</label>
+                            <input type="number" id="menu-inclination" value="28.5" min="0" max="180" step="0.1">
+                        </div>
+                        <div class="param-group">
+                            <label for="menu-time-scale">Time Acceleration</label>
+                            <select id="menu-time-scale">
+                                <option value="1">1x (Real-time)</option>
+                                <option value="5" selected>5x</option>
+                                <option value="10">10x</option>
+                                <option value="20">20x</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <button id="btn-launch-menu" class="btn-launch">
+                    <span class="launch-icon">🚀</span>
+                    <span class="launch-text">Launch Mission</span>
+                </button>
+
+                <div class="menu-footer">
+                    <p>Use mouse to orbit view • Scroll to zoom</p>
+                </div>
+            </div>
+        </div>
+
         <!-- 3D Visualization Container -->
         <div id="scene-container"></div>
 
         <!-- Control Panel -->
-        <div id="control-panel">
+        <div id="control-panel" class="hidden">
             <h1>Rocket Launch Simulator</h1>
 
             <div class="control-section">
@@ -60,7 +132,7 @@
         </div>
 
         <!-- Telemetry Panel -->
-        <div id="telemetry-panel">
+        <div id="telemetry-panel" class="hidden">
             <h2>Telemetry</h2>
 
             <div class="telemetry-row">
@@ -107,7 +179,7 @@
         </div>
 
         <!-- Event Log -->
-        <div id="event-panel">
+        <div id="event-panel" class="hidden">
             <h2>Events</h2>
             <div id="event-log"></div>
         </div>

@@ -325,3 +325,223 @@ label {
 ::-webkit-scrollbar-thumb:hover {
     background: #555;
 }
+
+/* ========== Starting Menu Styles ========== */
+#start-menu {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(5, 5, 15, 0.95);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(20px);
+}
+
+#start-menu.hidden {
+    display: none;
+}
+
+.menu-content {
+    max-width: 700px;
+    width: 90%;
+    padding: 40px;
+    background: linear-gradient(145deg, rgba(20, 20, 35, 0.9), rgba(10, 10, 20, 0.95));
+    border: 1px solid rgba(0, 212, 255, 0.3);
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5),
+                0 0 100px rgba(0, 212, 255, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.menu-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.menu-title {
+    font-size: 2.5em;
+    font-weight: 700;
+    background: linear-gradient(135deg, #00d4ff, #00ff88);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 10px;
+    text-shadow: 0 0 30px rgba(0, 212, 255, 0.3);
+}
+
+.menu-subtitle {
+    color: #888;
+    font-size: 1.1em;
+}
+
+.menu-section {
+    margin-bottom: 25px;
+}
+
+.menu-section h3 {
+    font-size: 0.9em;
+    color: #00d4ff;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 15px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(0, 212, 255, 0.2);
+}
+
+/* Rocket Cards */
+.rocket-cards {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+}
+
+.rocket-card {
+    background: rgba(30, 30, 50, 0.8);
+    border: 2px solid transparent;
+    border-radius: 12px;
+    padding: 15px 10px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.rocket-card:hover {
+    background: rgba(40, 40, 60, 0.9);
+    border-color: rgba(0, 212, 255, 0.3);
+    transform: translateY(-2px);
+}
+
+.rocket-card.selected {
+    background: rgba(0, 212, 255, 0.15);
+    border-color: #00d4ff;
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.2);
+}
+
+.rocket-icon {
+    font-size: 2em;
+    margin-bottom: 8px;
+}
+
+.rocket-name {
+    font-weight: 600;
+    font-size: 0.95em;
+    margin-bottom: 4px;
+}
+
+.rocket-stats {
+    font-size: 0.75em;
+    color: #888;
+}
+
+/* Mission Parameters */
+.menu-params {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+}
+
+.param-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.param-group label {
+    font-size: 0.85em;
+    color: #888;
+}
+
+.param-group input,
+.param-group select {
+    width: 100%;
+    padding: 10px 14px;
+    background: rgba(30, 30, 50, 0.8);
+    border: 1px solid #333;
+    border-radius: 8px;
+    color: #fff;
+    font-size: 1em;
+    transition: border-color 0.2s;
+}
+
+.param-group input:focus,
+.param-group select:focus {
+    outline: none;
+    border-color: #00d4ff;
+}
+
+/* Launch Button */
+.btn-launch {
+    width: 100%;
+    padding: 18px 30px;
+    margin-top: 10px;
+    background: linear-gradient(135deg, #00d4ff, #0099cc);
+    border: none;
+    border-radius: 12px;
+    color: #000;
+    font-size: 1.3em;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    box-shadow: 0 4px 20px rgba(0, 212, 255, 0.3);
+}
+
+.btn-launch:hover {
+    background: linear-gradient(135deg, #33ddff, #00aadd);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 30px rgba(0, 212, 255, 0.4);
+}
+
+.btn-launch:active {
+    transform: translateY(0);
+}
+
+.launch-icon {
+    font-size: 1.2em;
+}
+
+/* Menu Footer */
+.menu-footer {
+    text-align: center;
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.menu-footer p {
+    color: #666;
+    font-size: 0.85em;
+}
+
+/* Responsive adjustments for menu */
+@media (max-width: 600px) {
+    .rocket-cards {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .menu-params {
+        grid-template-columns: 1fr;
+    }
+
+    .menu-title {
+        font-size: 1.8em;
+    }
+
+    .menu-content {
+        padding: 25px;
+    }
+}
+
+/* Hidden class for panels */
+#control-panel.hidden,
+#telemetry-panel.hidden,
+#event-panel.hidden {
+    display: none;
+}

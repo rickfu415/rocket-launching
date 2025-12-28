@@ -7,6 +7,7 @@ import { SimulationClient } from './simulation/WebSocketClient.js';
 import { SimulationState } from './simulation/SimulationState.js';
 import { Controls } from './ui/Controls.js';
 import { Telemetry } from './ui/Telemetry.js';
+import { StartMenu } from './ui/StartMenu.js';
 
 class RocketSimulatorApp {
     constructor() {
@@ -15,6 +16,7 @@ class RocketSimulatorApp {
         this.state = null;
         this.controls = null;
         this.telemetry = null;
+        this.startMenu = null;
 
         this._init();
     }
@@ -39,7 +41,10 @@ class RocketSimulatorApp {
             onInfo: (info) => this._onInfo(info),
         });
 
-        // Create UI controllers
+        // Create Start Menu
+        this.startMenu = new StartMenu((config) => this._onMenuLaunch(config));
+
+        // Create UI controllers (hidden initially)
         this.controls = new Controls(this.state, this.client);
         this.telemetry = new Telemetry(this.state);
 
@@ -49,7 +54,6 @@ class RocketSimulatorApp {
             console.log('Connected to simulation server');
         } catch (error) {
             console.error('Failed to connect:', error);
-            this.controls.setStatus('Disconnected');
         }
 
         // Subscribe to state reset for scene reset
@@ -57,7 +61,81 @@ class RocketSimulatorApp {
             this.scene.reset();
         });
 
-        // No automatic camera movement - user controls the view
+        // Subscribe to simulation complete to show menu again
+        this.state.on('complete', () => {
+            // Show start menu after a delay
+            setTimeout(() => {
+                this._showMenu();
+            }, 3000);
+        });
+    }
+
+    /**
+     * Handle launch from start menu.
+     */
+    _onMenuLaunch(config) {
+        // Show UI panels
+        this._showSimulationUI();
+
+        // Update state with config
+        this.state.rocketName = config.rocket;
+        this.state.payloadMass = config.payloadMass;
+        this.state.targetAltitude = config.targetAltitude;
+        this.state.targetInclination = config.targetInclination;
+        this.state.timeAcceleration = config.timeAcceleration;
+
+        // Sync control panel values
+        this._syncControlPanel(config);
+
+        // Reset and start
+        this.state.reset();
+        this.scene.reset();
+        this.state.start();
+
+        // Start simulation via WebSocket
+        this.client.startSimulation(config);
+
+        // Update control panel state
+        this.controls._setRunningState();
+    }
+
+    /**
+     * Sync control panel inputs with menu config.
+     */
+    _syncControlPanel(config) {
+        const rocketSelect = document.getElementById('rocket-select');
+        const payloadMass = document.getElementById('payload-mass');
+        const targetAltitude = document.getElementById('target-altitude');
+        const targetInclination = document.getElementById('target-inclination');
+        const timeScale = document.getElementById('time-scale');
+        const timeScaleValue = document.getElementById('time-scale-value');
+
+        if (rocketSelect) rocketSelect.value = config.rocket;
+        if (payloadMass) payloadMass.value = config.payloadMass;
+        if (targetAltitude) targetAltitude.value = config.targetAltitude / 1000;
+        if (targetInclination) targetInclination.value = config.targetInclination;
+        if (timeScale) timeScale.value = config.timeAcceleration;
+        if (timeScaleValue) timeScaleValue.textContent = `${config.timeAcceleration}x`;
+    }
+
+    /**
+     * Show simulation UI panels.
+     */
+    _showSimulationUI() {
+        document.getElementById('control-panel').classList.remove('hidden');
+        document.getElementById('telemetry-panel').classList.remove('hidden');
+        document.getElementById('event-panel').classList.remove('hidden');
+    }
+
+    /**
+     * Hide simulation UI and show menu.
+     */
+    _showMenu() {
+        document.getElementById('control-panel').classList.add('hidden');
+        document.getElementById('telemetry-panel').classList.add('hidden');
+        document.getElementById('event-panel').classList.add('hidden');
+        document.getElementById('orbit-panel').classList.add('hidden');
+        this.startMenu.show();
     }
 
     _onState(data) {
