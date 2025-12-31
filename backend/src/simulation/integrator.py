@@ -59,6 +59,65 @@ def compute_acceleration(
     return a_gravity + a_thrust + a_drag
 
 
+def compute_forces_breakdown(
+    position: np.ndarray,
+    velocity: np.ndarray,
+    mass: float,
+    thrust_magnitude: float,
+    thrust_direction: np.ndarray,
+    cd: float,
+    area: float,
+) -> dict:
+    """
+    Compute breakdown of all forces and accelerations on the rocket.
+
+    Args:
+        position: Position vector (m)
+        velocity: Velocity vector (m/s)
+        mass: Current mass (kg)
+        thrust_magnitude: Engine thrust (N)
+        thrust_direction: Unit vector of thrust direction
+        cd: Drag coefficient
+        area: Reference area (m²)
+
+    Returns:
+        Dictionary with force and acceleration vectors
+    """
+    # Gravity acceleration (already acceleration, not force)
+    a_gravity = gravity_acceleration(position)
+    f_gravity = a_gravity * mass
+
+    # Thrust
+    if thrust_magnitude > 0 and mass > 0:
+        f_thrust = thrust_magnitude * thrust_direction
+        a_thrust = f_thrust / mass
+    else:
+        f_thrust = np.zeros(3)
+        a_thrust = np.zeros(3)
+
+    # Drag
+    altitude = np.linalg.norm(position) - EARTH_RADIUS_MEAN
+    if altitude < 0:
+        altitude = 0
+    a_drag = drag_acceleration(velocity, altitude, cd, area, mass)
+    f_drag = a_drag * mass
+
+    # Total
+    a_total = a_gravity + a_thrust + a_drag
+    f_total = f_gravity + f_thrust + f_drag
+
+    return {
+        "acceleration": a_total.tolist(),
+        "acceleration_gravity": a_gravity.tolist(),
+        "acceleration_thrust": a_thrust.tolist(),
+        "acceleration_drag": a_drag.tolist(),
+        "force_total": f_total.tolist(),
+        "force_gravity": f_gravity.tolist(),
+        "force_thrust": f_thrust.tolist(),
+        "force_drag": f_drag.tolist(),
+    }
+
+
 def rk4_step(
     state: SimulationState,
     rocket: Rocket,

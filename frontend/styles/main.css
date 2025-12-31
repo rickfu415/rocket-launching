@@ -195,6 +195,22 @@ label {
     color: #fff;
 }
 
+.telemetry-row .value.mono {
+    font-size: 0.75em;
+}
+
+/* Telemetry section headers */
+.telemetry-section {
+    font-size: 0.8em;
+    color: #00d4ff;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 15px;
+    margin-bottom: 8px;
+    padding-top: 10px;
+    border-top: 1px solid #333;
+}
+
 /* Progress bar for fuel */
 .progress-bar {
     width: 100px;
@@ -544,4 +560,161 @@ label {
 #telemetry-panel.hidden,
 #event-panel.hidden {
     display: none;
+}
+
+/* ========== Foldable Panel Styles ========== */
+.panel {
+    transition: all 0.3s ease;
+}
+
+.panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    padding-bottom: 10px;
+    margin-bottom: 10px;
+    border-bottom: 1px solid #333;
+    user-select: none;
+}
+
+.panel-header:hover {
+    opacity: 0.8;
+}
+
+.panel-header h1,
+.panel-header h2 {
+    margin: 0;
+    font-size: 1.1em;
+    color: #00d4ff;
+}
+
+.panel-toggle {
+    font-size: 1.2em;
+    color: #888;
+    transition: transform 0.3s ease;
+    width: 20px;
+    text-align: center;
+}
+
+.panel.collapsed .panel-toggle {
+    transform: rotate(-90deg);
+}
+
+.panel.collapsed .panel-content {
+    display: none;
+}
+
+.panel.collapsed .panel-header {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+/* Remove duplicate h1/h2 margins in panels */
+#control-panel.panel h1 {
+    margin-bottom: 0;
+}
+
+#telemetry-panel.panel h2,
+#event-panel.panel h2,
+#orbit-panel.panel h2 {
+    margin-bottom: 0;
+}
+
+/* ========== Return to Menu Button ========== */
+#btn-menu {
+    width: 100%;
+    margin-top: 15px;
+    padding: 10px 15px;
+}
+
+.btn-secondary {
+    background: #444;
+    color: #fff;
+}
+
+.btn-secondary:hover {
+    background: #555;
+}
+
+/* ========== Orbit Status Indicator ========== */
+.orbit-status {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px;
+    margin-bottom: 15px;
+    background: rgba(30, 30, 50, 0.8);
+    border-radius: 8px;
+    border: 1px solid #333;
+}
+
+.status-indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #888;
+    animation: pulse 2s infinite;
+}
+
+.status-indicator.ascending {
+    background: #ffaa00;
+    box-shadow: 0 0 8px #ffaa00;
+}
+
+.status-indicator.in-orbit {
+    background: #00ff88;
+    box-shadow: 0 0 8px #00ff88;
+    animation: pulse-green 2s infinite;
+}
+
+.status-indicator.descending {
+    background: #ff6600;
+    box-shadow: 0 0 8px #ff6600;
+}
+
+.status-indicator.landed {
+    background: #888;
+    box-shadow: none;
+    animation: none;
+}
+
+.status-indicator.failed {
+    background: #ff4444;
+    box-shadow: 0 0 8px #ff4444;
+    animation: pulse-red 1s infinite;
+}
+
+#orbit-status-text {
+    font-weight: 600;
+    color: #fff;
+    font-size: 0.95em;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+}
+
+@keyframes pulse-green {
+    0%, 100% {
+        opacity: 1;
+        box-shadow: 0 0 8px #00ff88;
+    }
+    50% {
+        opacity: 0.8;
+        box-shadow: 0 0 15px #00ff88;
+    }
+}
+
+@keyframes pulse-red {
+    0%, 100% {
+        opacity: 1;
+        box-shadow: 0 0 8px #ff4444;
+    }
+    50% {
+        opacity: 0.7;
+        box-shadow: 0 0 12px #ff4444;
+    }
 }

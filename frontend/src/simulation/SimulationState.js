@@ -14,7 +14,7 @@ export class SimulationState {
         this.payloadMass = 15000;
         this.targetAltitude = 400000; // meters
         this.targetInclination = 28.5; // degrees
-        this.timeAcceleration = 5;
+        this.timeAcceleration = 1;
 
         // Latest telemetry
         this.time = 0;
@@ -27,6 +27,21 @@ export class SimulationState {
         this.flightPathAngle = 90;
         this.position = [0, 0, 0];
         this.isBurning = false;
+
+        // 3D velocity and acceleration vectors (ECI frame)
+        this.velocity3D = [0, 0, 0];
+        this.acceleration3D = [0, 0, 0];
+
+        // Force breakdown (Newtons)
+        this.forceTotal = [0, 0, 0];
+        this.forceThrust = [0, 0, 0];
+        this.forceGravity = [0, 0, 0];
+        this.forceDrag = [0, 0, 0];
+
+        // Acceleration breakdown (m/s^2)
+        this.accelerationThrust = [0, 0, 0];
+        this.accelerationGravity = [0, 0, 0];
+        this.accelerationDrag = [0, 0, 0];
 
         // Events
         this.events = [];
@@ -54,13 +69,33 @@ export class SimulationState {
         this.time = data.time || 0;
         this.altitude = data.altitude || 0;
         this.velocity = data.speed || 0;
-        this.acceleration = data.acceleration || 0;
         this.stageIndex = data.stage_index || 0;
         this.fuelRemaining = data.fuel_remaining || 0;
         this.dynamicPressure = data.dynamic_pressure || 0;
         this.flightPathAngle = data.flight_path_angle || 0;
         this.position = data.position || [0, 0, 0];
         this.isBurning = data.is_burning || false;
+
+        // 3D velocity (from server)
+        this.velocity3D = data.velocity || [0, 0, 0];
+
+        // 3D acceleration and force breakdown
+        this.acceleration3D = data.acceleration || [0, 0, 0];
+        this.accelerationThrust = data.acceleration_thrust || [0, 0, 0];
+        this.accelerationGravity = data.acceleration_gravity || [0, 0, 0];
+        this.accelerationDrag = data.acceleration_drag || [0, 0, 0];
+
+        this.forceTotal = data.force_total || [0, 0, 0];
+        this.forceThrust = data.force_thrust || [0, 0, 0];
+        this.forceGravity = data.force_gravity || [0, 0, 0];
+        this.forceDrag = data.force_drag || [0, 0, 0];
+
+        // Compute scalar acceleration from 3D vector for backward compatibility
+        this.acceleration = Math.sqrt(
+            this.acceleration3D[0] ** 2 +
+            this.acceleration3D[1] ** 2 +
+            this.acceleration3D[2] ** 2
+        );
 
         this._notify('state', data);
     }
@@ -146,6 +181,17 @@ export class SimulationState {
         this.orbit = null;
         this.success = null;
 
+        // Reset 3D vectors
+        this.velocity3D = [0, 0, 0];
+        this.acceleration3D = [0, 0, 0];
+        this.forceTotal = [0, 0, 0];
+        this.forceThrust = [0, 0, 0];
+        this.forceGravity = [0, 0, 0];
+        this.forceDrag = [0, 0, 0];
+        this.accelerationThrust = [0, 0, 0];
+        this.accelerationGravity = [0, 0, 0];
+        this.accelerationDrag = [0, 0, 0];
+
         this._notify('reset', {});
     }
 
@@ -226,5 +272,78 @@ export class SimulationState {
     getFormattedAcceleration() {
         const g = this.acceleration / 9.81;
         return `${g.toFixed(1)} g`;
+    }
+
+    /**
+     * Format a 3D vector for display.
+     * @param {number[]} vec - 3D vector [x, y, z]
+     * @param {string} unit - Unit string
+     * @param {number} precision - Decimal places
+     */
+    _formatVector(vec, unit = '', precision = 1) {
+        const x = vec[0].toFixed(precision);
+        const y = vec[1].toFixed(precision);
+        const z = vec[2].toFixed(precision);
+        return `(${x}, ${y}, ${z})${unit ? ' ' + unit : ''}`;
+    }
+
+    /**
+     * Get formatted 3D velocity.
+     */
+    getFormattedVelocity3D() {
+        return this._formatVector(this.velocity3D, 'm/s', 1);
+    }
+
+    /**
+     * Get formatted 3D acceleration.
+     */
+    getFormattedAcceleration3D() {
+        return this._formatVector(this.acceleration3D, 'm/s²', 2);
+    }
+
+    /**
+     * Get formatted thrust force.
+     */
+    getFormattedForceThrust() {
+        // Convert to kN for readability
+        const kN = this.forceThrust.map(f => f / 1000);
+        return this._formatVector(kN, 'kN', 1);
+    }
+
+    /**
+     * Get formatted gravity force.
+     */
+    getFormattedForceGravity() {
+        const kN = this.forceGravity.map(f => f / 1000);
+        return this._formatVector(kN, 'kN', 1);
+    }
+
+    /**
+     * Get formatted drag force.
+     */
+    getFormattedForceDrag() {
+        const kN = this.forceDrag.map(f => f / 1000);
+        return this._formatVector(kN, 'kN', 1);
+    }
+
+    /**
+     * Get formatted total force.
+     */
+    getFormattedForceTotal() {
+        const kN = this.forceTotal.map(f => f / 1000);
+        return this._formatVector(kN, 'kN', 1);
+    }
+
+    /**
+     * Get force magnitudes for quick display.
+     */
+    getForceMagnitudes() {
+        const mag = (v) => Math.sqrt(v[0]**2 + v[1]**2 + v[2]**2);
+        return {
+            thrust: mag(this.forceThrust) / 1000,  // kN
+            gravity: mag(this.forceGravity) / 1000,
+            drag: mag(this.forceDrag) / 1000,
+            total: mag(this.forceTotal) / 1000,
+        };
     }
 }

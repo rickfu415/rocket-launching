@@ -16,6 +16,16 @@ export class Telemetry {
         this.dynamicPressureEl = document.getElementById('tel-dynamic-pressure');
         this.flightPathEl = document.getElementById('tel-flight-path');
 
+        // 3D vector elements
+        this.velocity3DEl = document.getElementById('tel-velocity-3d');
+        this.acceleration3DEl = document.getElementById('tel-acceleration-3d');
+
+        // Force elements
+        this.forceThrustEl = document.getElementById('tel-force-thrust');
+        this.forceGravityEl = document.getElementById('tel-force-gravity');
+        this.forceDragEl = document.getElementById('tel-force-drag');
+        this.forceTotalEl = document.getElementById('tel-force-total');
+
         // Event log
         this.eventLog = document.getElementById('event-log');
 
@@ -25,6 +35,12 @@ export class Telemetry {
         this.orbitApoapsis = document.getElementById('orbit-apoapsis');
         this.orbitInclination = document.getElementById('orbit-inclination');
         this.orbitPeriod = document.getElementById('orbit-period');
+
+        // Orbit status indicator
+        this.orbitIndicator = document.getElementById('orbit-indicator');
+        this.orbitStatusText = document.getElementById('orbit-status-text');
+        this.previousAltitude = 0;
+        this.isInOrbit = false;
 
         // Subscribe to state changes
         this.state.on('state', (data) => this._updateDisplay(data));
@@ -68,6 +84,89 @@ export class Telemetry {
 
         // Flight path angle
         this.flightPathEl.textContent = `${this.state.flightPathAngle.toFixed(1)}°`;
+
+        // 3D vectors
+        if (this.velocity3DEl) {
+            this.velocity3DEl.textContent = this.state.getFormattedVelocity3D();
+        }
+        if (this.acceleration3DEl) {
+            this.acceleration3DEl.textContent = this.state.getFormattedAcceleration3D();
+        }
+
+        // Forces (show magnitudes for cleaner display)
+        const forces = this.state.getForceMagnitudes();
+        if (this.forceThrustEl) {
+            this.forceThrustEl.textContent = `${forces.thrust.toFixed(1)} kN`;
+        }
+        if (this.forceGravityEl) {
+            this.forceGravityEl.textContent = `${forces.gravity.toFixed(1)} kN`;
+        }
+        if (this.forceDragEl) {
+            this.forceDragEl.textContent = `${forces.drag.toFixed(1)} kN`;
+        }
+        if (this.forceTotalEl) {
+            this.forceTotalEl.textContent = `${forces.total.toFixed(1)} kN`;
+        }
+
+        // Update orbit status indicator
+        this._updateOrbitStatus();
+    }
+
+    /**
+     * Update the orbit status indicator based on current flight state.
+     */
+    _updateOrbitStatus() {
+        if (!this.orbitIndicator || !this.orbitStatusText) return;
+
+        const altitude = this.state.altitude;
+        const velocity = this.state.velocity;
+        const flightPathAngle = this.state.flightPathAngle;
+
+        // Remove all status classes
+        this.orbitIndicator.classList.remove('ascending', 'in-orbit', 'descending', 'landed', 'failed');
+
+        // Karman line is at 100 km
+        const KARMAN_LINE = 100000;
+        // Orbital velocity at 400km is about 7.67 km/s
+        const MIN_ORBITAL_VELOCITY = 7000;
+
+        // Determine status
+        let status = 'ascending';
+        let statusText = 'Ascending';
+
+        if (this.isInOrbit) {
+            // Already in orbit - maintain status
+            status = 'in-orbit';
+            statusText = 'In Orbit';
+        } else if (altitude < 100) {
+            // On the ground
+            status = 'landed';
+            statusText = 'On Ground';
+        } else if (altitude >= KARMAN_LINE && velocity >= MIN_ORBITAL_VELOCITY && Math.abs(flightPathAngle) < 10) {
+            // Check if in orbit: above Karman line, high velocity, near horizontal flight
+            status = 'in-orbit';
+            statusText = 'In Orbit';
+            this.isInOrbit = true;
+        } else if (altitude >= KARMAN_LINE) {
+            // Above Karman line but not in stable orbit
+            if (flightPathAngle < -5) {
+                status = 'descending';
+                statusText = 'Descending';
+            } else {
+                status = 'ascending';
+                statusText = 'In Space';
+            }
+        } else if (altitude > this.previousAltitude) {
+            status = 'ascending';
+            statusText = 'Ascending';
+        } else if (altitude < this.previousAltitude && altitude > 1000) {
+            status = 'descending';
+            statusText = 'Descending';
+        }
+
+        this.orbitIndicator.classList.add(status);
+        this.orbitStatusText.textContent = statusText;
+        this.previousAltitude = altitude;
     }
 
     _addEvent(event) {
@@ -114,6 +213,20 @@ export class Telemetry {
     _handleComplete(result) {
         if (result.success && result.orbit) {
             this._showOrbitInfo(result.orbit);
+            // Update orbit status to show success
+            if (this.orbitIndicator && this.orbitStatusText) {
+                this.orbitIndicator.classList.remove('ascending', 'descending', 'landed', 'failed');
+                this.orbitIndicator.classList.add('in-orbit');
+                this.orbitStatusText.textContent = 'In Orbit';
+                this.isInOrbit = true;
+            }
+        } else {
+            // Mission failed
+            if (this.orbitIndicator && this.orbitStatusText) {
+                this.orbitIndicator.classList.remove('ascending', 'in-orbit', 'descending', 'landed');
+                this.orbitIndicator.classList.add('failed');
+                this.orbitStatusText.textContent = 'Mission Failed';
+            }
         }
     }
 
@@ -157,10 +270,41 @@ export class Telemetry {
         this.dynamicPressureEl.textContent = '0 kPa';
         this.flightPathEl.textContent = '90.0°';
 
+        // Reset 3D vectors
+        if (this.velocity3DEl) {
+            this.velocity3DEl.textContent = '(0, 0, 0) m/s';
+        }
+        if (this.acceleration3DEl) {
+            this.acceleration3DEl.textContent = '(0, 0, 0) m/s²';
+        }
+
+        // Reset forces
+        if (this.forceThrustEl) {
+            this.forceThrustEl.textContent = '0 kN';
+        }
+        if (this.forceGravityEl) {
+            this.forceGravityEl.textContent = '0 kN';
+        }
+        if (this.forceDragEl) {
+            this.forceDragEl.textContent = '0 kN';
+        }
+        if (this.forceTotalEl) {
+            this.forceTotalEl.textContent = '0 kN';
+        }
+
         // Clear event log
         this.eventLog.innerHTML = '';
 
         // Hide orbit panel
         this.orbitPanel.classList.add('hidden');
+
+        // Reset orbit status
+        this.previousAltitude = 0;
+        this.isInOrbit = false;
+        if (this.orbitIndicator && this.orbitStatusText) {
+            this.orbitIndicator.classList.remove('ascending', 'in-orbit', 'descending', 'failed');
+            this.orbitIndicator.classList.add('landed');
+            this.orbitStatusText.textContent = 'On Ground';
+        }
     }
 }

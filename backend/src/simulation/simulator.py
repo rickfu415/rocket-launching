@@ -11,8 +11,9 @@ from typing import List, Optional, AsyncGenerator, Callable
 import numpy as np
 
 from .state import SimulationState, create_initial_state
-from .integrator import rk4_step
+from .integrator import rk4_step, compute_forces_breakdown
 from .flight_profile import GravityTurnProfile, FlightProfileConfig, compute_launch_azimuth
+from ..physics.atmosphere import Atmosphere
 from ..rocket.rocket import Rocket, LAUNCH_SITES
 from ..physics.constants import EARTH_RADIUS_MEAN
 from ..physics.aerodynamics import dynamic_pressure
@@ -407,26 +408,62 @@ class Simulator:
                 self.step()
 
             # Calculate derived values
-            acceleration = (self.state.speed - prev_velocity) / (self.dt * steps_per_update)
             q = dynamic_pressure(self.state.velocity, self.state.altitude)
 
             # Fuel remaining in current stage
             if self.state.stage_index < self.rocket.num_stages:
                 stage = self.rocket.stages[self.state.stage_index]
                 fuel_remaining = self.state.stage_propellant / stage.propellant_mass
+
+                # Get thrust direction for force computation
+                thrust_dir = self.profile.get_thrust_direction(
+                    self.state,
+                    self._launch_azimuth,
+                )
+
+                # Get thrust magnitude
+                altitude = self.state.altitude
+                if altitude < 0:
+                    altitude = 0
+                pressure = Atmosphere.pressure(altitude)
+
+                if self.state.is_burning and self.state.stage_propellant > 0:
+                    thrust = stage.thrust_at_pressure(pressure)
+                else:
+                    thrust = 0.0
+
+                # Compute force breakdown
+                forces = compute_forces_breakdown(
+                    self.state.position,
+                    self.state.velocity,
+                    self.state.mass,
+                    thrust,
+                    thrust_dir,
+                    stage.cd,
+                    stage.reference_area,
+                )
             else:
                 fuel_remaining = 0.0
+                forces = compute_forces_breakdown(
+                    self.state.position,
+                    self.state.velocity,
+                    self.state.mass,
+                    0.0,
+                    np.array([0.0, 0.0, 1.0]),
+                    0.3,
+                    10.0,
+                )
 
             # Yield events first
             for event in self.events[last_event_count:]:
                 yield event.to_dict()
             last_event_count = len(self.events)
 
-            # Yield state
+            # Yield state with force breakdown
             yield {
                 "type": "state",
                 **self.state.to_dict(),
-                "acceleration": float(acceleration),
+                **forces,
                 "dynamic_pressure": float(q),
                 "fuel_remaining": float(fuel_remaining),
             }

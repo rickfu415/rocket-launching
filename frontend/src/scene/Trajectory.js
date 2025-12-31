@@ -1,19 +1,25 @@
 /**
  * Trajectory visualization for Three.js scene.
  *
- * Renders the rocket's path as a colored line.
+ * Renders the rocket's path as a yellow line.
+ * The trajectory is static - it shows the complete path from launch.
  */
 
 import * as THREE from 'three';
-import { eciToScene, altitudeToColor } from '../utils/coordinates.js';
-import { TRAJECTORY_MAX_POINTS } from '../utils/constants.js';
+import { eciToScene } from '../utils/coordinates.js';
+
+// Large capacity to hold entire flight trajectory without shifting
+const TRAJECTORY_MAX_POINTS = 50000;
+
+// Minimum distance between points to avoid clutter (in scene units)
+const MIN_POINT_DISTANCE = 0.0001;
 
 export class Trajectory {
     constructor() {
         this.points = [];
-        this.colors = [];
         this.line = null;
         this.group = new THREE.Group();
+        this.lastPoint = null;
 
         this._initLine();
     }
@@ -22,61 +28,56 @@ export class Trajectory {
         // Create initial geometry with max capacity
         const geometry = new THREE.BufferGeometry();
 
-        // Pre-allocate buffers
+        // Pre-allocate buffers for entire trajectory
         const positions = new Float32Array(TRAJECTORY_MAX_POINTS * 3);
-        const colors = new Float32Array(TRAJECTORY_MAX_POINTS * 3);
 
         geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-        geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
         geometry.setDrawRange(0, 0);
 
         const material = new THREE.LineBasicMaterial({
-            vertexColors: true,
+            color: 0xffff00,  // Yellow
             linewidth: 2,
         });
 
         this.line = new THREE.Line(geometry, material);
+        this.line.frustumCulled = false;  // Always render
         this.group.add(this.line);
     }
 
     /**
      * Add a point to the trajectory.
+     * Points are kept permanently - the trajectory shows the complete path from launch.
      *
      * @param {number[]} position - ECI position [x, y, z]
-     * @param {number} altitude - Altitude in meters (for coloring)
+     * @param {number} altitude - Altitude in meters (unused, kept for API compatibility)
      */
     addPoint(position, altitude) {
+        // Don't add if at capacity (trajectory is complete)
         if (this.points.length >= TRAJECTORY_MAX_POINTS) {
-            // Remove oldest points if at capacity
-            this.points.shift();
-            this.colors.shift();
+            return;
         }
 
         const scenePos = eciToScene(position);
-        const color = altitudeToColor(altitude);
 
-        this.points.push(scenePos);
-        this.colors.push(color);
-
-        this._updateGeometry();
-    }
-
-    _updateGeometry() {
-        const geometry = this.line.geometry;
-        const positionAttr = geometry.getAttribute('position');
-        const colorAttr = geometry.getAttribute('color');
-
-        for (let i = 0; i < this.points.length; i++) {
-            const point = this.points[i];
-            const color = this.colors[i];
-
-            positionAttr.setXYZ(i, point.x, point.y, point.z);
-            colorAttr.setXYZ(i, color.r, color.g, color.b);
+        // Skip if too close to last point (avoid clutter)
+        if (this.lastPoint) {
+            const dist = scenePos.distanceTo(this.lastPoint);
+            if (dist < MIN_POINT_DISTANCE) {
+                return;
+            }
         }
 
+        // Store this point
+        this.lastPoint = scenePos.clone();
+
+        // Add point to array and update geometry directly (more efficient)
+        const index = this.points.length;
+        this.points.push(scenePos);
+
+        const positionAttr = this.line.geometry.getAttribute('position');
+        positionAttr.setXYZ(index, scenePos.x, scenePos.y, scenePos.z);
         positionAttr.needsUpdate = true;
-        colorAttr.needsUpdate = true;
-        geometry.setDrawRange(0, this.points.length);
+        this.line.geometry.setDrawRange(0, this.points.length);
     }
 
     /**
@@ -84,7 +85,7 @@ export class Trajectory {
      */
     clear() {
         this.points = [];
-        this.colors = [];
+        this.lastPoint = null;
 
         const geometry = this.line.geometry;
         geometry.setDrawRange(0, 0);

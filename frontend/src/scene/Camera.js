@@ -242,19 +242,88 @@ export class CameraController {
 
     /**
      * Enable rocket-following camera for launch sequence.
-     * User can manually adjust the view at any time.
+     * Camera is positioned once but user has full control after that.
      *
      * @param {THREE.Object3D} target - Rocket object to follow
+     * @param {boolean} smoothTransition - Whether to smoothly transition camera
      */
-    setRocketFollowMode(target) {
-        this.mode = 'rocket';
-        this.followTarget = target;
-        this.rocketFollowEnabled = true;
+    setRocketFollowMode(target, smoothTransition = false) {
+        // Switch to orbit mode - no auto-following, user has full control
+        this.mode = 'orbit';
+        this.followTarget = null;
+        this.rocketFollowEnabled = false;
         this.hasSwitchedToEarth = false;
-        this.currentAltitude = 0;
+
+        // Reset camera near/far planes to orbital view defaults
+        this.camera.near = 0.01;
+        this.camera.far = 100;
+        this.camera.updateProjectionMatrix();
+
+        // Reset distance limits to orbital view defaults
+        this.controls.minDistance = CAMERA_MIN_DISTANCE;
+        this.controls.maxDistance = CAMERA_MAX_DISTANCE;
 
         // Keep orbit controls enabled so user can adjust view manually
         this.controls.enabled = true;
+        this.controls.enableZoom = true;
+        this.controls.enableRotate = true;
+        this.controls.enablePan = true;
+
+        if (smoothTransition && target) {
+            // Smooth transition to view the rocket, then let user control
+            this._transitionToRocketView(target);
+        }
+    }
+
+    /**
+     * Smoothly transition camera to view the rocket (centered).
+     */
+    _transitionToRocketView(target) {
+        const targetPos = target.position.clone();
+
+        // Check if rocket position is valid (not at origin/center of Earth)
+        // Rocket should be at Earth surface, so length should be ~1.0 in scene units
+        if (targetPos.length() < 0.5) {
+            // Rocket position not set properly, skip transition
+            console.warn('Rocket position invalid:', targetPos.x, targetPos.y, targetPos.z);
+            this.mode = 'orbit';
+            return;
+        }
+
+        // Calculate end position - position camera to see the rocket clearly
+        // The rocket is on the Earth's surface, we want to view it from a good angle
+        const radial = targetPos.clone().normalize();
+
+        // Position camera at a distance where we can see the rocket and trajectory
+        const viewDistance = 0.5;  // Good distance to see rocket on Earth
+
+        // Camera end position: offset from rocket position along radial direction
+        this.transitionEndPos.copy(targetPos);
+        this.transitionEndPos.add(radial.clone().multiplyScalar(viewDistance));
+
+        // Look at the rocket position (rocket stays centered)
+        this.transitionEndTarget.copy(targetPos);
+
+        // When coming from ground view, camera position is in different coordinate scale
+        // Start from a sensible orbital view position (far from Earth, looking at rocket)
+        const startDistance = 3.0;  // Start from 3 Earth radii distance
+        this.transitionStartPos.copy(targetPos);
+        this.transitionStartPos.add(radial.clone().multiplyScalar(startDistance));
+
+        // Start looking at the rocket
+        this.transitionStartTarget.copy(targetPos);
+
+        // Immediately set camera to start position (jump out of ground view coords)
+        this.camera.position.copy(this.transitionStartPos);
+        this.controls.target.copy(this.transitionStartTarget);
+
+        // Start transition
+        this.transitioning = true;
+        this.transitionProgress = 0;
+        this.transitionDuration = 1.5;
+
+        // Note: When transition completes in _updateTransition,
+        // the camera and controls.target will be set to the end positions
     }
 
     /**
@@ -356,6 +425,56 @@ export class CameraController {
     }
 
     /**
+     * Set camera for ground view mode.
+     * Camera follows the rocket vertically, keeping it centered.
+     *
+     * @param {THREE.Object3D} groundViewObject - The ground view group
+     */
+    setGroundViewMode(groundViewObject) {
+        this.mode = 'ground';
+        this.followTarget = groundViewObject;
+        this.controls.enabled = true;
+        this.controls.enableZoom = true;
+        this.controls.enableRotate = true;
+        this.controls.enablePan = true;
+
+        // Adjust camera near/far planes for ground view to prevent clipping
+        this.camera.near = 0.1;
+        this.camera.far = 2000;
+        this.camera.updateProjectionMatrix();
+
+        // Initial camera position - will be updated to follow rocket
+        this.camera.position.set(50, 40, 50);
+        this.controls.target.set(0, 5, 0);
+
+        // Adjust controls for ground view - allow zoom with wider range
+        this.controls.minDistance = 5;
+        this.controls.maxDistance = 500;
+
+        // Store ground view specific state
+        this.groundViewRocketY = 5;
+    }
+
+    /**
+     * Update ground view camera to follow rocket vertically.
+     * @param {number} rocketY - Y position of rocket in ground view scene units
+     */
+    updateGroundViewTarget(rocketY) {
+        if (this.mode !== 'ground') return;
+
+        this.groundViewRocketY = rocketY;
+
+        // Keep camera target on the rocket (centered)
+        const currentTarget = this.controls.target.clone();
+        currentTarget.y = rocketY;
+        this.controls.target.copy(currentTarget);
+
+        // Move camera up with rocket to keep it in view
+        const cameraY = rocketY + 35;  // Camera stays above rocket
+        this.camera.position.y = cameraY;
+    }
+
+    /**
      * Reset camera to initial position.
      */
     reset() {
@@ -366,6 +485,16 @@ export class CameraController {
         this.currentAltitude = 0;
         this.transitioning = false;
         this.controls.enabled = true;
+
+        // Reset camera near/far planes to orbital view defaults
+        this.camera.near = 0.01;
+        this.camera.far = 100;
+        this.camera.updateProjectionMatrix();
+
+        // Reset distance limits to orbital view defaults
+        this.controls.minDistance = CAMERA_MIN_DISTANCE;
+        this.controls.maxDistance = CAMERA_MAX_DISTANCE;
+
         this._setInitialCameraPosition();
     }
 

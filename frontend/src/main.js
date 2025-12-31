@@ -57,17 +57,64 @@ class RocketSimulatorApp {
         }
 
         // Subscribe to state reset for scene reset
+        // Only reset if explicitly starting a new simulation (not from menu)
         this.state.on('reset', () => {
-            this.scene.reset();
+            // Don't reset scene if we're just completing - only when starting fresh
+            if (!this.state.isComplete) {
+                this.scene.reset();
+            }
         });
 
-        // Subscribe to simulation complete to show menu again
-        this.state.on('complete', () => {
-            // Show start menu after a delay
-            setTimeout(() => {
-                this._showMenu();
-            }, 3000);
+        // Subscribe to simulation complete - keep view, don't auto-return to menu
+        this.state.on('complete', (result) => {
+            // Keep the current view - user can manually return to menu
+            // Don't auto-show menu anymore
         });
+
+        // Setup panel folding
+        this._setupPanelFolding();
+
+        // Setup return to menu button
+        this._setupMenuButton();
+    }
+
+    /**
+     * Setup panel header click handlers for folding.
+     */
+    _setupPanelFolding() {
+        const panelHeaders = document.querySelectorAll('.panel-header');
+        panelHeaders.forEach(header => {
+            header.addEventListener('click', () => {
+                const panel = header.closest('.panel');
+                if (panel) {
+                    panel.classList.toggle('collapsed');
+                    const toggle = header.querySelector('.panel-toggle');
+                    if (toggle) {
+                        toggle.textContent = panel.classList.contains('collapsed') ? '+' : '-';
+                    }
+                }
+            });
+        });
+    }
+
+    /**
+     * Setup return to menu button.
+     */
+    _setupMenuButton() {
+        const menuBtn = document.getElementById('btn-menu');
+        if (menuBtn) {
+            menuBtn.addEventListener('click', () => {
+                // Stop simulation if running
+                if (this.state.isRunning) {
+                    this.client.stopSimulation();
+                    this.state.stop();
+                }
+                // Return to menu
+                this._showMenu();
+                // Reset scene
+                this.scene.reset();
+            });
+        }
     }
 
     /**
@@ -139,6 +186,12 @@ class RocketSimulatorApp {
     }
 
     _onState(data) {
+        // Ignore state updates after simulation completes
+        // This keeps the scene frozen at the last position
+        if (this.state.isComplete) {
+            return;
+        }
+
         // Update state
         this.state.updateFromServer(data);
 
@@ -158,6 +211,12 @@ class RocketSimulatorApp {
 
     _onComplete(result) {
         console.log('Simulation complete:', result);
+
+        // FIRST: Mark simulation as complete to freeze the scene
+        // This prevents any further updates from moving the rocket
+        this.scene.setSimulationComplete();
+
+        // Now handle state and UI updates
         this.state.handleComplete(result);
         this.controls.handleComplete(result);
 
