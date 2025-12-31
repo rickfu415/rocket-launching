@@ -1,0 +1,134 @@
+{
+  "_comment": "Rocket Launch Simulator Configuration File",
+  "_units": {
+    "mass": "kg (kilograms)",
+    "thrust": "N (Newtons)",
+    "isp": "s (seconds)",
+    "altitude": "m (meters)",
+    "angle": "deg (degrees)",
+    "time": "s (seconds)",
+    "diameter": "m (meters)"
+  },
+
+  "name": "Custom Rocket",
+  "description": "User-defined rocket configuration",
+
+  "payload": {
+    "_comment": "Payload section - the cargo being delivered to orbit",
+    "mass": 15000,
+    "_mass_comment": "Payload mass in kg - the satellite or cargo being launched",
+    "fairing_mass": 1900,
+    "_fairing_mass_comment": "Protective nose cone mass in kg - jettisoned after leaving atmosphere"
+  },
+
+  "stages": [
+    {
+      "_comment": "=== FIRST STAGE === Provides initial thrust to escape atmosphere",
+      "name": "First Stage",
+
+      "dry_mass": 25600,
+      "_dry_mass_comment": "Empty stage mass without propellant (kg) - structure, engines, tanks",
+
+      "propellant_mass": 411000,
+      "_propellant_mass_comment": "Fuel + oxidizer mass (kg) - consumed during burn",
+
+      "thrust_sl": 7607000,
+      "_thrust_sl_comment": "Thrust at sea level (N) - lower due to atmospheric backpressure",
+
+      "thrust_vac": 8227000,
+      "_thrust_vac_comment": "Thrust in vacuum (N) - higher efficiency in space",
+
+      "isp_sl": 282,
+      "_isp_sl_comment": "Specific impulse at sea level (s) - fuel efficiency measure",
+
+      "isp_vac": 311,
+      "_isp_vac_comment": "Specific impulse in vacuum (s) - higher in space",
+
+      "num_engines": 9,
+      "_num_engines_comment": "Number of engines - affects redundancy and throttle capability",
+
+      "cd": 0.3,
+      "_cd_comment": "Drag coefficient - aerodynamic drag factor (0.2-0.4 typical for rockets)",
+
+      "diameter": 3.7,
+      "_diameter_comment": "Stage diameter (m) - used to calculate cross-sectional area for drag"
+    },
+    {
+      "_comment": "=== SECOND STAGE === Provides final push to orbital velocity",
+      "name": "Second Stage",
+
+      "dry_mass": 4000,
+      "_dry_mass_comment": "Empty stage mass (kg) - lighter than first stage",
+
+      "propellant_mass": 107500,
+      "_propellant_mass_comment": "Fuel + oxidizer mass (kg)",
+
+      "thrust_sl": 981000,
+      "_thrust_sl_comment": "Thrust at sea level (N) - rarely used at SL",
+
+      "thrust_vac": 981000,
+      "_thrust_vac_comment": "Thrust in vacuum (N) - primary operating condition",
+
+      "isp_sl": 348,
+      "_isp_sl_comment": "Specific impulse at sea level (s)",
+
+      "isp_vac": 348,
+      "_isp_vac_comment": "Specific impulse in vacuum (s) - optimized for vacuum operation",
+
+      "num_engines": 1,
+      "_num_engines_comment": "Single engine typical for upper stages",
+
+      "cd": 0.3,
+      "_cd_comment": "Drag coefficient - less important in vacuum",
+
+      "diameter": 3.7,
+      "_diameter_comment": "Stage diameter (m)"
+    }
+  ],
+
+  "launch_site": {
+    "_comment": "Launch location - affects initial velocity from Earth's rotation",
+    "name": "Cape Canaveral",
+    "latitude": 28.562,
+    "_latitude_comment": "Degrees north - lower latitude = more rotational velocity boost",
+    "longitude": -80.577,
+    "_longitude_comment": "Degrees east (negative = west)",
+    "altitude": 0,
+    "_altitude_comment": "Launch pad altitude above sea level (m)"
+  },
+
+  "flight_profile": {
+    "_comment": "=== FLIGHT PROFILE === Controls the trajectory shape",
+
+    "vertical_ascent_altitude": 150,
+    "_vertical_ascent_altitude_comment": "Altitude (m) to climb vertically before pitching - clears launch tower",
+
+    "pitchover_angle": 2.2,
+    "_pitchover_angle_comment": "Initial pitch from vertical (deg) - the 'kick' that starts gravity turn. Larger = more aggressive turn. Too large = crash. Too small = waste fuel fighting gravity",
+
+    "pitchover_duration": 6.0,
+    "_pitchover_duration_comment": "Time (s) to complete pitchover maneuver - smooth transition",
+
+    "target_altitude": 400000,
+    "_target_altitude_comment": "Target orbital altitude (m) - 400km is typical LEO (ISS orbit)",
+
+    "target_inclination": 28.5,
+    "_target_inclination_comment": "Orbital inclination (deg) - minimum = launch latitude. 28.5 = Cape Canaveral latitude",
+
+    "fairing_jettison_altitude": 110000,
+    "_fairing_jettison_altitude_comment": "Altitude (m) to drop fairing - above atmosphere (~110km) to avoid heating"
+  },
+
+  "simulation": {
+    "_comment": "=== SIMULATION SETTINGS ===",
+
+    "time_step": 0.1,
+    "_time_step_comment": "Integration time step (s) - smaller = more accurate but slower",
+
+    "max_time": 1800,
+    "_max_time_comment": "Maximum simulation duration (s) - 1800s = 30 minutes",
+
+    "print_interval": 10.0,
+    "_print_interval_comment": "Output interval (s) - how often to print telemetry"
+  }
+}

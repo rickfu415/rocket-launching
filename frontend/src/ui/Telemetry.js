@@ -16,6 +16,12 @@ export class Telemetry {
         this.dynamicPressureEl = document.getElementById('tel-dynamic-pressure');
         this.flightPathEl = document.getElementById('tel-flight-path');
 
+        // New telemetry elements
+        this.machEl = document.getElementById('tel-mach');
+        this.twrEl = document.getElementById('tel-twr');
+        this.totalMassEl = document.getElementById('tel-total-mass');
+        this.stageFuelEl = document.getElementById('tel-stage-fuel');
+
         // 3D vector elements
         this.velocity3DEl = document.getElementById('tel-velocity-3d');
         this.acceleration3DEl = document.getElementById('tel-acceleration-3d');
@@ -84,6 +90,30 @@ export class Telemetry {
 
         // Flight path angle
         this.flightPathEl.textContent = `${this.state.flightPathAngle.toFixed(1)}°`;
+
+        // Mach number
+        if (this.machEl) {
+            this.machEl.textContent = this.state.mach.toFixed(2);
+        }
+
+        // Thrust to weight ratio
+        if (this.twrEl) {
+            this.twrEl.textContent = this.state.twr.toFixed(2);
+        }
+
+        // Total mass (in tonnes)
+        if (this.totalMassEl) {
+            const massT = this.state.totalMass / 1000;
+            this.totalMassEl.textContent = `${massT.toFixed(1)} t`;
+        }
+
+        // Stage fuel (used / total in tonnes)
+        if (this.stageFuelEl) {
+            const fuelUsedT = this.state.stageFuelUsed / 1000;
+            const fuelTotalT = this.state.stageFuelTotal / 1000;
+            const fuelRemainingT = fuelTotalT - fuelUsedT;
+            this.stageFuelEl.textContent = `${fuelRemainingT.toFixed(1)} / ${fuelTotalT.toFixed(1)} t`;
+        }
 
         // 3D vectors
         if (this.velocity3DEl) {
@@ -269,6 +299,20 @@ export class Telemetry {
         this.fuelBar.style.background = 'linear-gradient(90deg, #00d4ff, #00ff88)';
         this.dynamicPressureEl.textContent = '0 kPa';
         this.flightPathEl.textContent = '90.0°';
+
+        // Reset new telemetry fields
+        if (this.machEl) {
+            this.machEl.textContent = '0.0';
+        }
+        if (this.twrEl) {
+            this.twrEl.textContent = '0.0';
+        }
+        if (this.totalMassEl) {
+            this.totalMassEl.textContent = '0 t';
+        }
+        if (this.stageFuelEl) {
+            this.stageFuelEl.textContent = '0 / 0 t';
+        }
 
         // Reset 3D vectors
         if (this.velocity3DEl) {

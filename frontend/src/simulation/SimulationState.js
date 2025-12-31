@@ -43,6 +43,14 @@ export class SimulationState {
         this.accelerationGravity = [0, 0, 0];
         this.accelerationDrag = [0, 0, 0];
 
+        // Mass and fuel tracking
+        this.totalMass = 0;
+        this.initialMass = 0;
+        this.stageFuelTotal = 0;
+        this.stageFuelUsed = 0;
+        this.twr = 0;  // Thrust to weight ratio
+        this.mach = 0; // Mach number
+
         // Events
         this.events = [];
 
@@ -89,6 +97,14 @@ export class SimulationState {
         this.forceThrust = data.force_thrust || [0, 0, 0];
         this.forceGravity = data.force_gravity || [0, 0, 0];
         this.forceDrag = data.force_drag || [0, 0, 0];
+
+        // Mass and fuel tracking
+        this.totalMass = data.total_mass || 0;
+        this.initialMass = data.initial_mass || 0;
+        this.stageFuelTotal = data.stage_fuel_total || 0;
+        this.stageFuelUsed = data.stage_fuel_used || 0;
+        this.twr = data.twr || 0;
+        this.mach = data.mach || 0;
 
         // Compute scalar acceleration from 3D vector for backward compatibility
         this.acceleration = Math.sqrt(
@@ -191,6 +207,14 @@ export class SimulationState {
         this.accelerationThrust = [0, 0, 0];
         this.accelerationGravity = [0, 0, 0];
         this.accelerationDrag = [0, 0, 0];
+
+        // Reset mass and fuel tracking
+        this.totalMass = 0;
+        this.initialMass = 0;
+        this.stageFuelTotal = 0;
+        this.stageFuelUsed = 0;
+        this.twr = 0;
+        this.mach = 0;
 
         this._notify('reset', {});
     }

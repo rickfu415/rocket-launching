@@ -459,13 +459,28 @@ class Simulator:
                 yield event.to_dict()
             last_event_count = len(self.events)
 
-            # Yield state with force breakdown
+            # Calculate mass consumption
+            current_stage = self.rocket.stages[self.state.stage_index] if self.state.stage_index < self.rocket.num_stages else None
+            stage_fuel_total = current_stage.propellant_mass if current_stage else 0
+            stage_fuel_used = stage_fuel_total - self.state.stage_propellant if current_stage else 0
+
+            # Calculate TWR
+            thrust_magnitude = np.linalg.norm(forces.get('force_thrust', [0, 0, 0]))
+            twr = thrust_magnitude / (self.state.mass * 9.80665) if self.state.mass > 0 else 0
+
+            # Yield state with force breakdown and additional telemetry
             yield {
                 "type": "state",
                 **self.state.to_dict(),
                 **forces,
                 "dynamic_pressure": float(q),
                 "fuel_remaining": float(fuel_remaining),
+                "stage_fuel_total": float(stage_fuel_total),
+                "stage_fuel_used": float(stage_fuel_used),
+                "total_mass": float(self.state.mass),
+                "initial_mass": float(self.rocket.total_mass),
+                "twr": float(twr),
+                "mach": float(self.state.speed / 343) if self.state.altitude < 80000 else 0,  # Approximate
             }
 
             await asyncio.sleep(update_interval / self.time_acceleration)

@@ -17,11 +17,12 @@ class FlightProfileConfig:
     """Configuration for the flight profile."""
 
     # Vertical ascent phase
-    vertical_ascent_altitude: float = 500.0  # meters, climb vertically until this altitude
+    vertical_ascent_altitude: float = 150.0  # meters, climb vertically until this altitude
 
     # Pitch-over (gravity turn initiation)
-    pitchover_angle: float = 2.0  # degrees, initial pitch from vertical
-    pitchover_duration: float = 10.0  # seconds to complete pitchover
+    # This kick angle determines the trajectory - larger = more horizontal orbit
+    pitchover_angle: float = 2.2  # degrees, initial pitch from vertical (kick angle)
+    pitchover_duration: float = 6.0  # seconds to complete pitchover
 
     # Target orbit parameters
     target_altitude: float = 400_000.0  # meters (400 km LEO)
@@ -49,6 +50,7 @@ class GravityTurnProfile:
     def __init__(self, config: Optional[FlightProfileConfig] = None):
         self.config = config or FlightProfileConfig()
         self._pitchover_start_time: Optional[float] = None
+        self._pitchover_end_time: Optional[float] = None
         self._pitchover_direction: Optional[np.ndarray] = None
 
     def get_thrust_direction(
@@ -58,6 +60,11 @@ class GravityTurnProfile:
     ) -> np.ndarray:
         """
         Compute thrust direction for current state.
+
+        Implements a pitch program:
+        1. Vertical ascent until ~150m
+        2. Pitchover maneuver (12° over 15 seconds)
+        3. Continuous pitch-down following gravity turn with bias toward horizontal
 
         Args:
             state: Current simulation state
@@ -93,42 +100,72 @@ class GravityTurnProfile:
         north_local = np.cross(radial, east)
         north_local = north_local / np.linalg.norm(north_local)
 
+        # Compute horizontal direction based on launch azimuth
+        azimuth_rad = math.radians(launch_azimuth)
+        horizontal_dir = (
+            math.sin(azimuth_rad) * east +
+            math.cos(azimuth_rad) * north_local
+        )
+
         # Phase 2: Pitchover initiation
-        if altitude < self.config.vertical_ascent_altitude + 1000:
-            # Initialize pitchover if not already done
-            if self._pitchover_start_time is None:
-                self._pitchover_start_time = state.time
+        if self._pitchover_start_time is None:
+            self._pitchover_start_time = state.time
+            self._pitchover_direction = horizontal_dir
 
-                # Compute pitchover direction based on launch azimuth
-                azimuth_rad = math.radians(launch_azimuth)
-                horizontal_dir = (
-                    math.sin(azimuth_rad) * east +
-                    math.cos(azimuth_rad) * north_local
-                )
-                self._pitchover_direction = horizontal_dir
+        elapsed_since_pitchover = state.time - self._pitchover_start_time
 
-            # Gradually pitch over
-            elapsed = state.time - self._pitchover_start_time
-            if elapsed < self.config.pitchover_duration:
-                # Interpolate pitch angle
-                t = elapsed / self.config.pitchover_duration
-                pitch_angle = t * math.radians(self.config.pitchover_angle)
+        if elapsed_since_pitchover < self.config.pitchover_duration:
+            # Initial pitchover: smoothly rotate from vertical
+            t = elapsed_since_pitchover / self.config.pitchover_duration
+            # Use smooth easing
+            t_smooth = t * t * (3 - 2 * t)  # smoothstep
+            pitch_angle = t_smooth * math.radians(self.config.pitchover_angle)
 
-                # Blend vertical with horizontal
-                thrust_dir = (
-                    math.cos(pitch_angle) * radial +
-                    math.sin(pitch_angle) * self._pitchover_direction
-                )
-                return thrust_dir / np.linalg.norm(thrust_dir)
+            # Blend vertical with horizontal
+            thrust_dir = (
+                math.cos(pitch_angle) * radial +
+                math.sin(pitch_angle) * self._pitchover_direction
+            )
+            return thrust_dir / np.linalg.norm(thrust_dir)
 
-        # Phase 3: Gravity turn - follow velocity vector
+        # Phase 3: Gravity turn - mostly follow velocity vector
+        # The gravity turn naturally pitches over due to gravity
+        # We just need a small initial kick and then follow prograde
         v_mag = np.linalg.norm(velocity)
-        if v_mag > 10.0:  # Only if we have meaningful velocity
+
+        if v_mag > 10.0:
             # Prograde direction (along velocity)
             prograde = velocity / v_mag
 
-            # For gravity turn, we thrust mostly prograde
-            # with a small correction to maintain desired flight path
+            # Calculate current flight path angle (angle above horizontal)
+            # Positive = climbing, Negative = descending
+            vertical_component = np.dot(prograde, radial)
+            current_fpa_deg = math.degrees(math.asin(max(-1, min(1, vertical_component))))
+
+            # For a true gravity turn, we mostly follow prograde
+            # But we need to ensure we don't go too steep or too shallow
+
+            # If descending (negative FPA), pitch up to stay in orbit
+            if current_fpa_deg < -2.0 and altitude > 100000:
+                # Pitch up toward horizontal
+                pitch_correction = math.radians(min(5.0, abs(current_fpa_deg)))
+
+                # Get horizontal direction (perpendicular to radial, in velocity plane)
+                horizontal_vel = prograde - vertical_component * radial
+                h_mag = np.linalg.norm(horizontal_vel)
+                if h_mag > 0.01:
+                    horizontal_vel = horizontal_vel / h_mag
+                    # Pitch up = rotate toward radial
+                    thrust_dir = (
+                        math.cos(pitch_correction) * prograde +
+                        math.sin(pitch_correction) * radial
+                    )
+                    return thrust_dir / np.linalg.norm(thrust_dir)
+
+            # If climbing steeply in atmosphere, follow natural gravity turn
+            # The gravity turn naturally reduces FPA over time
+
+            # Default: follow prograde (pure gravity turn)
             return prograde
 
         # Fallback: continue along current trajectory
@@ -200,9 +237,9 @@ class GravityTurnProfile:
         Check if the rocket has achieved orbit.
 
         Criteria:
-        1. Altitude above target (with margin)
+        1. Altitude above Karman line (100 km)
         2. Flight path angle near zero (horizontal)
-        3. Velocity near orbital velocity
+        3. Periapsis above 100 km (actual orbit check)
 
         Args:
             state: Current simulation state
@@ -210,6 +247,8 @@ class GravityTurnProfile:
         Returns:
             True if orbit is achieved
         """
+        from ..orbit.elements import compute_orbital_elements
+
         altitude = state.altitude
 
         # Must be above Karman line
@@ -221,11 +260,15 @@ class GravityTurnProfile:
         if fpa > math.radians(5):  # More than 5 degrees from horizontal
             return False
 
-        # Check velocity against orbital velocity
-        v_orbit = self.get_target_orbit_velocity(altitude)
-        v_actual = state.horizontal_velocity
+        # Compute actual orbital elements to check periapsis
+        elements = compute_orbital_elements(state.position, state.velocity)
 
-        if v_actual < 0.95 * v_orbit:
+        # Periapsis must be above 100 km
+        if elements.periapsis_altitude < 100_000:
+            return False
+
+        # Eccentricity must indicate bound orbit
+        if elements.eccentricity >= 1.0:
             return False
 
         return True

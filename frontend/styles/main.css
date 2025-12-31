@@ -362,7 +362,7 @@ label {
 }
 
 .menu-content {
-    max-width: 700px;
+    max-width: 800px;
     width: 90%;
     padding: 40px;
     background: linear-gradient(145deg, rgba(20, 20, 35, 0.9), rgba(10, 10, 20, 0.95));
@@ -371,6 +371,8 @@ label {
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5),
                 0 0 100px rgba(0, 212, 255, 0.1),
                 inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    max-height: 90vh;
+    overflow-y: auto;
 }
 
 .menu-header {
@@ -451,6 +453,62 @@ label {
 .rocket-stats {
     font-size: 0.75em;
     color: #888;
+}
+
+/* Rocket Specifications Panel */
+.rocket-specs {
+    margin-top: 20px;
+    padding: 15px;
+    background: rgba(20, 20, 35, 0.8);
+    border: 1px solid rgba(0, 212, 255, 0.2);
+    border-radius: 10px;
+}
+
+.rocket-specs h4 {
+    font-size: 1em;
+    color: #00d4ff;
+    margin-bottom: 12px;
+    text-align: center;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(0, 212, 255, 0.2);
+}
+
+.specs-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+.specs-section {
+    margin-bottom: 10px;
+}
+
+.specs-section h5 {
+    font-size: 0.8em;
+    color: #00ff88;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid rgba(0, 255, 136, 0.2);
+}
+
+.spec-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 3px 0;
+    font-size: 0.75em;
+}
+
+.spec-label {
+    color: #888;
+}
+
+.spec-value {
+    color: #e0e0e0;
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-weight: 500;
 }
 
 /* Mission Parameters */
