@@ -5,8 +5,8 @@
 
 import * as THREE from 'three';
 
-// Altitude threshold for ground view (20 km)
-export const GROUND_VIEW_THRESHOLD = 20000;
+// Altitude threshold for ground view (50 km)
+export const GROUND_VIEW_THRESHOLD = 50000;
 
 export class GroundView {
     constructor() {
@@ -120,17 +120,17 @@ export class GroundView {
     }
 
     _createAltitudeMarkers() {
-        // Altitude markers every 5 km (for 20 km range)
+        // Altitude markers every 10 km (for 50 km range)
         this.altitudeMarkers = new THREE.Group();
 
-        for (let alt = 5; alt <= 20; alt += 5) {
-            // Horizontal ring at each 5 km altitude
+        for (let alt = 10; alt <= 50; alt += 10) {
+            // Horizontal ring at each 10 km altitude
             const ringGeometry = new THREE.RingGeometry(18, 20, 32);
             const ringMaterial = new THREE.MeshBasicMaterial({
                 color: 0x4488aa,
                 side: THREE.DoubleSide,
                 transparent: true,
-                opacity: 0.2,
+                opacity: 0.15,
             });
             const ring = new THREE.Mesh(ringGeometry, ringMaterial);
             ring.rotation.x = -Math.PI / 2;

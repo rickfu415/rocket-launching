@@ -17,6 +17,7 @@ class RocketSimulatorApp {
         this.controls = null;
         this.telemetry = null;
         this.startMenu = null;
+        this._orbitShown = false;  // Track if we've shown orbit status
 
         this._init();
     }
@@ -137,6 +138,7 @@ class RocketSimulatorApp {
         // Reset and start
         this.state.reset();
         this.scene.reset();
+        this._orbitShown = false;  // Reset orbit status flag
         this.state.start();
 
         // Start simulation via WebSocket
@@ -150,19 +152,8 @@ class RocketSimulatorApp {
      * Sync control panel inputs with menu config.
      */
     _syncControlPanel(config) {
-        const rocketSelect = document.getElementById('rocket-select');
-        const payloadMass = document.getElementById('payload-mass');
-        const targetAltitude = document.getElementById('target-altitude');
-        const targetInclination = document.getElementById('target-inclination');
-        const timeScale = document.getElementById('time-scale');
-        const timeScaleValue = document.getElementById('time-scale-value');
-
-        if (rocketSelect) rocketSelect.value = config.rocket;
-        if (payloadMass) payloadMass.value = config.payloadMass;
-        if (targetAltitude) targetAltitude.value = config.targetAltitude / 1000;
-        if (targetInclination) targetInclination.value = config.targetInclination;
-        if (timeScale) timeScale.value = config.timeAcceleration;
-        if (timeScaleValue) timeScaleValue.textContent = `${config.timeAcceleration}x`;
+        // Use the new setMissionConfig method to update all flight info
+        this.controls.setMissionConfig(config);
     }
 
     /**
@@ -172,6 +163,8 @@ class RocketSimulatorApp {
         document.getElementById('control-panel').classList.remove('hidden');
         document.getElementById('telemetry-panel').classList.remove('hidden');
         document.getElementById('event-panel').classList.remove('hidden');
+        // Show action buttons panel
+        this.controls.showActionPanel();
     }
 
     /**
@@ -182,6 +175,8 @@ class RocketSimulatorApp {
         document.getElementById('telemetry-panel').classList.add('hidden');
         document.getElementById('event-panel').classList.add('hidden');
         document.getElementById('orbit-panel').classList.add('hidden');
+        // Hide action buttons panel
+        this.controls.hideActionPanel();
         this.startMenu.show();
     }
 
@@ -202,6 +197,17 @@ class RocketSimulatorApp {
             altitude: data.altitude,
             is_burning: data.is_burning,
         });
+
+        // If we just entered orbit, show orbit prediction and update UI
+        if (data.in_orbit && !this._orbitShown) {
+            this._orbitShown = true;
+            this.controls.setStatus('In Orbit');
+            // Request orbit info from any existing events
+            const orbitEvent = this.state.events.find(e => e.event === 'orbit_insertion');
+            if (orbitEvent) {
+                console.log('Orbit insertion detected:', orbitEvent);
+            }
+        }
     }
 
     _onEvent(event) {

@@ -16,7 +16,7 @@ export const TRAJECTORY_COLOR_HIGH = 0xff0000; // Red at high altitude
 
 // Camera settings
 export const CAMERA_INITIAL_DISTANCE = 3; // Earth radii
-export const CAMERA_MIN_DISTANCE = 1.1; // Just above surface
+export const CAMERA_MIN_DISTANCE = 0.2; // Allow close zoom
 export const CAMERA_MAX_DISTANCE = 20; // Far view
 
 // Update intervals

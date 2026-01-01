@@ -163,58 +163,117 @@
         <!-- 3D Visualization Container -->
         <div id="scene-container"></div>
 
-        <!-- Control Panel -->
+        <!-- Flight Info Panel (Left) - Shows flight parameters during simulation -->
         <div id="control-panel" class="panel hidden">
             <div class="panel-header" data-panel="control-panel">
-                <h1>Controls</h1>
+                <h1>Flight Info</h1>
                 <span class="panel-toggle">-</span>
             </div>
             <div class="panel-content">
-                <div class="control-section">
-                    <h3>Rocket Selection</h3>
-                    <select id="rocket-select">
-                        <option value="falcon9">Falcon 9 Block 5</option>
-                        <option value="saturn_v">Saturn V</option>
-                        <option value="electron">Electron</option>
-                        <option value="starship">Starship</option>
-                    </select>
+                <!-- Hidden inputs for compatibility -->
+                <select id="rocket-select" style="display:none;">
+                    <option value="falcon9">Falcon 9 Block 5</option>
+                    <option value="saturn_v">Saturn V</option>
+                    <option value="electron">Electron</option>
+                    <option value="starship">Starship</option>
+                </select>
+                <input type="number" id="payload-mass" value="15000" style="display:none;">
+                <input type="number" id="target-altitude" value="400" style="display:none;">
+                <input type="number" id="target-inclination" value="28.5" style="display:none;">
+                <input type="range" id="time-scale" min="1" max="20" value="1" style="display:none;">
+                <span id="time-scale-value" style="display:none;">1x</span>
+
+                <!-- Mission Info -->
+                <div class="flight-info-section">
+                    <h3>Mission</h3>
+                    <div class="flight-info-row">
+                        <span class="label">Rocket</span>
+                        <span id="flight-rocket" class="value">Falcon 9</span>
+                    </div>
+                    <div class="flight-info-row">
+                        <span class="label">Payload</span>
+                        <span id="flight-payload" class="value">15,000 kg</span>
+                    </div>
+                    <div class="flight-info-row">
+                        <span class="label">Target Orbit</span>
+                        <span id="flight-target" class="value">400 km</span>
+                    </div>
                 </div>
 
-                <div class="control-section">
-                    <h3>Payload Mass (kg)</h3>
-                    <input type="number" id="payload-mass" value="15000" min="0" max="150000">
+                <!-- Current Stage Info -->
+                <div class="flight-info-section">
+                    <h3>Current Stage</h3>
+                    <div class="flight-info-row">
+                        <span class="label">Stage</span>
+                        <span id="flight-stage" class="value">1</span>
+                    </div>
+                    <div class="flight-info-row">
+                        <span class="label">Status</span>
+                        <span id="flight-status" class="value status-burning">BURNING</span>
+                    </div>
+                    <div class="flight-info-row">
+                        <span class="label">TWR</span>
+                        <span id="flight-twr" class="value">1.20</span>
+                    </div>
+                    <div class="flight-info-row">
+                        <span class="label">Mach</span>
+                        <span id="flight-mach" class="value">0.0</span>
+                    </div>
                 </div>
 
-                <div class="control-section">
-                    <h3>Target Orbit</h3>
-                    <label>
-                        Altitude (km):
-                        <input type="number" id="target-altitude" value="400" min="100" max="2000">
-                    </label>
-                    <label>
-                        Inclination (deg):
-                        <input type="number" id="target-inclination" value="28.5" min="0" max="180">
-                    </label>
+                <!-- Mass Info -->
+                <div class="flight-info-section">
+                    <h3>Mass</h3>
+                    <div class="flight-info-row">
+                        <span class="label">Current</span>
+                        <span id="flight-mass" class="value">549.1 t</span>
+                    </div>
+                    <div class="flight-info-row">
+                        <span class="label">Stage Fuel</span>
+                        <span id="flight-fuel" class="value">411.0 t</span>
+                    </div>
+                    <div class="flight-info-row">
+                        <span class="label">Fuel %</span>
+                        <div class="flight-fuel-bar">
+                            <div id="flight-fuel-fill" class="flight-fuel-fill" style="width: 100%"></div>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="control-section">
-                    <h3>Simulation Speed</h3>
-                    <input type="range" id="time-scale" min="1" max="20" value="1">
-                    <span id="time-scale-value">1x</span>
+                <!-- Speed Control -->
+                <div class="flight-info-section">
+                    <h3>Time Warp</h3>
+                    <div class="speed-control">
+                        <button class="speed-btn" data-speed="1">1x</button>
+                        <button class="speed-btn" data-speed="5">5x</button>
+                        <button class="speed-btn active" data-speed="10">10x</button>
+                        <button class="speed-btn" data-speed="20">20x</button>
+                    </div>
                 </div>
 
-                <div class="button-group">
-                    <button id="btn-start" class="btn btn-primary">Launch</button>
-                    <button id="btn-pause" class="btn" disabled>Pause</button>
-                    <button id="btn-stop" class="btn btn-danger" disabled>Abort</button>
-                </div>
-
-                <div id="status-display">
-                    <span id="status-text">Ready</span>
-                </div>
-
-                <button id="btn-menu" class="btn btn-secondary">Return to Menu</button>
+                <button id="btn-menu" class="btn btn-secondary btn-menu">Return to Menu</button>
             </div>
+        </div>
+
+        <!-- Action Buttons Panel (Bottom Center) -->
+        <div id="action-panel" class="panel hidden">
+            <button id="btn-start" class="action-btn action-btn-launch">
+                <span class="action-icon">🚀</span>
+                <span class="action-text">LAUNCH</span>
+            </button>
+            <button id="btn-pause" class="action-btn action-btn-pause" disabled>
+                <span class="action-icon">⏸</span>
+                <span class="action-text">PAUSE</span>
+            </button>
+            <button id="btn-stop" class="action-btn action-btn-abort" disabled>
+                <span class="action-icon">⛔</span>
+                <span class="action-text">ABORT</span>
+            </button>
+        </div>
+
+        <!-- Status Display (Bottom) -->
+        <div id="status-panel" class="panel hidden">
+            <span id="status-text">Ready for Launch</span>
         </div>
 
         <!-- Telemetry Panel -->
@@ -243,6 +302,11 @@
                 <div class="telemetry-row">
                     <span class="label">Velocity</span>
                     <span id="tel-velocity" class="value">0 m/s</span>
+                </div>
+
+                <div class="telemetry-row">
+                    <span class="label">Vertical Vel</span>
+                    <span id="tel-radial-velocity" class="value">0 m/s</span>
                 </div>
 
                 <div class="telemetry-row">

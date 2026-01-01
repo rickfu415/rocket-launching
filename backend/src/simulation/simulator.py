@@ -103,6 +103,13 @@ class Simulator:
         self._running = False
         self._paused = False
 
+        # Orbit tracking
+        self._orbit_achieved = False
+        self._orbit_result = None
+        self._orbit_time = 0.0  # Time when orbit was achieved
+        self._orbital_period = 5520.0  # Default ~92 min for 400km LEO
+        self._post_orbit_duration = 5 * 5520.0  # Continue for 5 complete orbits (~27600 seconds)
+
     def initialize(self) -> SimulationState:
         """Initialize simulation state."""
         launch_site = self.rocket.launch_site_info
@@ -125,6 +132,9 @@ class Simulator:
         self._max_q_value = 0.0
         self._max_q_reached = False
         self._last_burning_state = True
+        self._orbit_achieved = False
+        self._orbit_result = None
+        self._orbit_time = 0.0
 
         # Record liftoff event
         self._add_event(SimulationEventType.LIFTOFF, {})
@@ -257,11 +267,43 @@ class Simulator:
         if self.state.altitude < -100:  # Below sea level
             return True
 
-        # Orbit achieved
-        if self.profile.is_orbit_achieved(self.state):
-            return True
+        # Check for orbit achievement (but don't stop - continue to show orbiting)
+        if not self._orbit_achieved and self.profile.is_orbit_achieved(self.state):
+            self._orbit_achieved = True
+            self._orbit_time = self.state.time
+            # Store orbit result for later
+            from ..orbit.elements import compute_orbital_elements
+            from ..orbit.analysis import analyze_orbit
+            orbital_elements = compute_orbital_elements(
+                self.state.position,
+                self.state.velocity,
+            )
+            self._orbit_result = analyze_orbit(orbital_elements)
+            if self._orbit_result.success:
+                # Use actual orbital period from computed elements
+                self._orbital_period = orbital_elements.orbital_period
+                # Continue for 5 complete orbits
+                self._post_orbit_duration = 5 * self._orbital_period
+                # Extend max simulation time to allow 5 orbits (override 1 hour limit)
+                self.max_time = self.state.time + self._post_orbit_duration + 600
+                self._add_event(SimulationEventType.ORBIT_INSERTION, {
+                    "periapsis": orbital_elements.periapsis_altitude,
+                    "apoapsis": orbital_elements.apoapsis_altitude,
+                    "inclination": orbital_elements.inclination_degrees,
+                    "eccentricity": orbital_elements.eccentricity,
+                    "orbital_period": orbital_elements.orbital_period,
+                })
+                # Set time acceleration to 20x for orbiting visualization
+                self.time_acceleration = 20.0
 
-        # All stages burned and coasting down
+        # If orbit was achieved, continue for post_orbit_duration
+        if self._orbit_achieved:
+            if self.state.time - self._orbit_time >= self._post_orbit_duration:
+                return True
+            # Keep going - show the payload orbiting
+            return False
+
+        # All stages burned and coasting down (failure case)
         if self.state.stage_index >= self.rocket.num_stages:
             # Check if we're falling back
             if self.state.radial_velocity < -100 and self.state.altitude < 100_000:
@@ -481,6 +523,10 @@ class Simulator:
                 "initial_mass": float(self.rocket.total_mass),
                 "twr": float(twr),
                 "mach": float(self.state.speed / 343) if self.state.altitude < 80000 else 0,  # Approximate
+                "radial_velocity": float(self.state.radial_velocity),
+                "in_orbit": self._orbit_achieved,
+                "orbit_number": int((self.state.time - self._orbit_time) / self._orbital_period) + 1 if self._orbit_achieved else 0,
+                "orbital_period": float(self._orbital_period) if self._orbit_achieved else 0,
             }
 
             await asyncio.sleep(update_interval / self.time_acceleration)

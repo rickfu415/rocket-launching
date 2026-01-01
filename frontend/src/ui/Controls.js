@@ -7,24 +7,53 @@ export class Controls {
         this.state = simulationState;
         this.client = simulationClient;
 
-        // DOM elements
+        // DOM elements - hidden inputs for compatibility
         this.rocketSelect = document.getElementById('rocket-select');
         this.payloadMass = document.getElementById('payload-mass');
         this.targetAltitude = document.getElementById('target-altitude');
         this.targetInclination = document.getElementById('target-inclination');
         this.timeScale = document.getElementById('time-scale');
         this.timeScaleValue = document.getElementById('time-scale-value');
+
+        // Action buttons
         this.btnStart = document.getElementById('btn-start');
         this.btnPause = document.getElementById('btn-pause');
         this.btnStop = document.getElementById('btn-stop');
         this.statusText = document.getElementById('status-text');
+
+        // Action panel
+        this.actionPanel = document.getElementById('action-panel');
+        this.statusPanel = document.getElementById('status-panel');
+
+        // Flight info panel elements
+        this.flightRocket = document.getElementById('flight-rocket');
+        this.flightPayload = document.getElementById('flight-payload');
+        this.flightTarget = document.getElementById('flight-target');
+        this.flightStage = document.getElementById('flight-stage');
+        this.flightStatus = document.getElementById('flight-status');
+        this.flightTwr = document.getElementById('flight-twr');
+        this.flightMach = document.getElementById('flight-mach');
+        this.flightMass = document.getElementById('flight-mass');
+        this.flightFuel = document.getElementById('flight-fuel');
+        this.flightFuelFill = document.getElementById('flight-fuel-fill');
+
+        // Speed control buttons
+        this.speedButtons = document.querySelectorAll('.speed-btn');
+
+        // Rocket name mapping
+        this.rocketNames = {
+            'falcon9': 'Falcon 9',
+            'saturn_v': 'Saturn V',
+            'electron': 'Electron',
+            'starship': 'Starship'
+        };
 
         this._bindEvents();
         this._updateTimeScaleDisplay();
     }
 
     _bindEvents() {
-        // Rocket selection
+        // Rocket selection (hidden, but still functional)
         this.rocketSelect.addEventListener('change', () => {
             this.state.rocketName = this.rocketSelect.value;
             this._updateDefaultPayload();
@@ -45,7 +74,7 @@ export class Controls {
             this.state.targetInclination = parseFloat(this.targetInclination.value) || 28.5;
         });
 
-        // Time scale
+        // Time scale (hidden range input)
         this.timeScale.addEventListener('input', () => {
             this.state.timeAcceleration = parseFloat(this.timeScale.value) || 1;
             this._updateTimeScaleDisplay();
@@ -56,6 +85,14 @@ export class Controls {
             }
         });
 
+        // Speed control buttons
+        this.speedButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const speed = parseInt(btn.dataset.speed);
+                this._setSpeed(speed);
+            });
+        });
+
         // Start button
         this.btnStart.addEventListener('click', () => this._onStart());
 
@@ -64,6 +101,83 @@ export class Controls {
 
         // Stop button
         this.btnStop.addEventListener('click', () => this._onStop());
+
+        // Subscribe to state changes to update flight info
+        this.state.on('state', () => this._updateFlightInfo());
+    }
+
+    _setSpeed(speed) {
+        this.state.timeAcceleration = speed;
+        this.timeScale.value = speed;
+
+        // Update button states
+        this.speedButtons.forEach(btn => {
+            btn.classList.toggle('active', parseInt(btn.dataset.speed) === speed);
+        });
+
+        // Update server if running
+        if (this.state.isRunning) {
+            this.client.setSpeed(speed);
+        }
+    }
+
+    _updateFlightInfo() {
+        if (!this.state.isRunning) return;
+
+        // Update stage
+        if (this.flightStage) {
+            this.flightStage.textContent = (this.state.stageIndex + 1).toString();
+        }
+
+        // Update status (burning/coast)
+        if (this.flightStatus) {
+            if (this.state.isBurning) {
+                this.flightStatus.textContent = 'BURNING';
+                this.flightStatus.className = 'value status-burning';
+            } else {
+                this.flightStatus.textContent = 'COAST';
+                this.flightStatus.className = 'value status-coast';
+            }
+        }
+
+        // Update TWR
+        if (this.flightTwr) {
+            this.flightTwr.textContent = this.state.twr.toFixed(2);
+        }
+
+        // Update Mach
+        if (this.flightMach) {
+            this.flightMach.textContent = this.state.mach.toFixed(1);
+        }
+
+        // Update mass
+        if (this.flightMass) {
+            const massT = this.state.totalMass / 1000;
+            this.flightMass.textContent = `${massT.toFixed(1)} t`;
+        }
+
+        // Update stage fuel
+        if (this.flightFuel) {
+            const fuelRemainingT = (this.state.stageFuelTotal - this.state.stageFuelUsed) / 1000;
+            this.flightFuel.textContent = `${fuelRemainingT.toFixed(1)} t`;
+        }
+
+        // Update fuel bar
+        if (this.flightFuelFill) {
+            const fuelPct = this.state.stageFuelTotal > 0
+                ? ((this.state.stageFuelTotal - this.state.stageFuelUsed) / this.state.stageFuelTotal) * 100
+                : 0;
+            this.flightFuelFill.style.width = `${Math.max(0, Math.min(100, fuelPct))}%`;
+
+            // Change color based on level
+            if (fuelPct < 20) {
+                this.flightFuelFill.style.background = 'linear-gradient(90deg, #ff4444, #ff6666)';
+            } else if (fuelPct < 50) {
+                this.flightFuelFill.style.background = 'linear-gradient(90deg, #ffaa00, #ffcc00)';
+            } else {
+                this.flightFuelFill.style.background = 'linear-gradient(90deg, #00d4ff, #00ff88)';
+            }
+        }
     }
 
     _updateDefaultPayload() {
@@ -80,7 +194,33 @@ export class Controls {
     }
 
     _updateTimeScaleDisplay() {
-        this.timeScaleValue.textContent = `${this.state.timeAcceleration}x`;
+        if (this.timeScaleValue) {
+            this.timeScaleValue.textContent = `${this.state.timeAcceleration}x`;
+        }
+    }
+
+    /**
+     * Set mission parameters from start menu config.
+     */
+    setMissionConfig(config) {
+        this.rocketSelect.value = config.rocket;
+        this.payloadMass.value = config.payloadMass;
+        this.targetAltitude.value = config.targetAltitude / 1000; // Convert m to km
+        this.targetInclination.value = config.targetInclination;
+
+        // Set time acceleration
+        this._setSpeed(config.timeAcceleration);
+
+        // Update flight info panel with mission details
+        if (this.flightRocket) {
+            this.flightRocket.textContent = this.rocketNames[config.rocket] || config.rocket;
+        }
+        if (this.flightPayload) {
+            this.flightPayload.textContent = `${config.payloadMass.toLocaleString()} kg`;
+        }
+        if (this.flightTarget) {
+            this.flightTarget.textContent = `${(config.targetAltitude / 1000).toFixed(0)} km`;
+        }
     }
 
     _onStart() {
@@ -109,15 +249,20 @@ export class Controls {
     }
 
     _onPause() {
+        const pauseText = this.btnPause.querySelector('.action-text');
+        const pauseIcon = this.btnPause.querySelector('.action-icon');
+
         if (this.state.isPaused) {
             this.state.resume();
             this.client.resume();
-            this.btnPause.textContent = 'Pause';
+            if (pauseText) pauseText.textContent = 'PAUSE';
+            if (pauseIcon) pauseIcon.textContent = '⏸';
             this._setStatus('Running');
         } else {
             this.state.pause();
             this.client.pause();
-            this.btnPause.textContent = 'Resume';
+            if (pauseText) pauseText.textContent = 'RESUME';
+            if (pauseIcon) pauseIcon.textContent = '▶';
             this._setStatus('Paused');
         }
     }
@@ -132,12 +277,10 @@ export class Controls {
         this.btnStart.disabled = true;
         this.btnPause.disabled = false;
         this.btnStop.disabled = false;
-        this.rocketSelect.disabled = true;
-        this.payloadMass.disabled = true;
-        this.targetAltitude.disabled = true;
-        this.targetInclination.disabled = true;
 
-        this.btnStart.textContent = 'Launching...';
+        const startText = this.btnStart.querySelector('.action-text');
+        if (startText) startText.textContent = 'LAUNCHED';
+
         this._setStatus('Launching');
     }
 
@@ -145,13 +288,15 @@ export class Controls {
         this.btnStart.disabled = false;
         this.btnPause.disabled = true;
         this.btnStop.disabled = true;
-        this.rocketSelect.disabled = false;
-        this.payloadMass.disabled = false;
-        this.targetAltitude.disabled = false;
-        this.targetInclination.disabled = false;
 
-        this.btnStart.textContent = 'Launch';
-        this.btnPause.textContent = 'Pause';
+        const startText = this.btnStart.querySelector('.action-text');
+        const pauseText = this.btnPause.querySelector('.action-text');
+        const pauseIcon = this.btnPause.querySelector('.action-icon');
+
+        if (startText) startText.textContent = 'LAUNCH';
+        if (pauseText) pauseText.textContent = 'PAUSE';
+        if (pauseIcon) pauseIcon.textContent = '⏸';
+
         this._setStatus('Ready');
     }
 
@@ -169,6 +314,12 @@ export class Controls {
             this.statusText.style.color = '#ff4444';
         } else {
             this.statusText.style.color = '#00d4ff';
+        }
+
+        // Update flight status indicator
+        if (this.flightStatus && (status === 'Success' || status === 'Failed')) {
+            this.flightStatus.textContent = status.toUpperCase();
+            this.flightStatus.className = status === 'Success' ? 'value status-complete' : 'value status-burning';
         }
     }
 
@@ -190,5 +341,29 @@ export class Controls {
      */
     setStatus(status) {
         this._setStatus(status);
+    }
+
+    /**
+     * Show action panel.
+     */
+    showActionPanel() {
+        if (this.actionPanel) {
+            this.actionPanel.classList.remove('hidden');
+        }
+        if (this.statusPanel) {
+            this.statusPanel.classList.remove('hidden');
+        }
+    }
+
+    /**
+     * Hide action panel.
+     */
+    hideActionPanel() {
+        if (this.actionPanel) {
+            this.actionPanel.classList.add('hidden');
+        }
+        if (this.statusPanel) {
+            this.statusPanel.classList.add('hidden');
+        }
     }
 }

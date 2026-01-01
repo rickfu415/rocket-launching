@@ -21,6 +21,7 @@ export class Telemetry {
         this.twrEl = document.getElementById('tel-twr');
         this.totalMassEl = document.getElementById('tel-total-mass');
         this.stageFuelEl = document.getElementById('tel-stage-fuel');
+        this.radialVelocityEl = document.getElementById('tel-radial-velocity');
 
         // 3D vector elements
         this.velocity3DEl = document.getElementById('tel-velocity-3d');
@@ -115,6 +116,21 @@ export class Telemetry {
             this.stageFuelEl.textContent = `${fuelRemainingT.toFixed(1)} / ${fuelTotalT.toFixed(1)} t`;
         }
 
+        // Radial (vertical) velocity
+        if (this.radialVelocityEl) {
+            const rv = this.state.radialVelocity;
+            const sign = rv >= 0 ? '+' : '';
+            this.radialVelocityEl.textContent = `${sign}${rv.toFixed(1)} m/s`;
+            // Color based on ascending/descending
+            if (rv > 10) {
+                this.radialVelocityEl.style.color = '#00ff88';  // Ascending
+            } else if (rv < -10) {
+                this.radialVelocityEl.style.color = '#ff6666';  // Descending
+            } else {
+                this.radialVelocityEl.style.color = '#00d4ff';  // Near zero (orbit!)
+            }
+        }
+
         // 3D vectors
         if (this.velocity3DEl) {
             this.velocity3DEl.textContent = this.state.getFormattedVelocity3D();
@@ -164,10 +180,11 @@ export class Telemetry {
         let status = 'ascending';
         let statusText = 'Ascending';
 
-        if (this.isInOrbit) {
-            // Already in orbit - maintain status
+        if (this.state.inOrbit) {
+            // In orbit - show orbit count
             status = 'in-orbit';
-            statusText = 'In Orbit';
+            statusText = `Orbit ${this.state.orbitNumber}/5`;
+            this.isInOrbit = true;
         } else if (altitude < 100) {
             // On the ground
             status = 'landed';
@@ -243,11 +260,11 @@ export class Telemetry {
     _handleComplete(result) {
         if (result.success && result.orbit) {
             this._showOrbitInfo(result.orbit);
-            // Update orbit status to show success
+            // Update orbit status to show mission complete
             if (this.orbitIndicator && this.orbitStatusText) {
                 this.orbitIndicator.classList.remove('ascending', 'descending', 'landed', 'failed');
                 this.orbitIndicator.classList.add('in-orbit');
-                this.orbitStatusText.textContent = 'In Orbit';
+                this.orbitStatusText.textContent = '5 Orbits Complete!';
                 this.isInOrbit = true;
             }
         } else {

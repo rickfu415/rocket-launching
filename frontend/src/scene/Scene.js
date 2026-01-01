@@ -8,6 +8,7 @@ import { Rocket } from './Rocket.js';
 import { Trajectory, OrbitPrediction } from './Trajectory.js';
 import { CameraController } from './Camera.js';
 import { GroundView, GROUND_VIEW_THRESHOLD } from './GroundView.js';
+import { Sun, Moon } from './CelestialBodies.js';
 import { COLORS } from '../utils/constants.js';
 
 export class RocketScene {
@@ -26,6 +27,8 @@ export class RocketScene {
         this.trajectory = null;
         this.orbitPrediction = null;
         this.groundView = null;
+        this.sun = null;
+        this.moon = null;
 
         // View state
         this.isGroundViewActive = false;
@@ -82,22 +85,23 @@ export class RocketScene {
     }
 
     _createLights() {
-        // Ambient light
-        const ambient = new THREE.AmbientLight(0x404060, 0.5);
+        // Ambient light (very dim for space - just enough to see dark side)
+        const ambient = new THREE.AmbientLight(0x202030, 0.3);
         this.scene.add(ambient);
 
-        // Sun light (directional)
-        const sunLight = new THREE.DirectionalLight(0xffffff, 1.0);
-        sunLight.position.set(5, 3, 5);
-        this.scene.add(sunLight);
-
-        // Fill light from opposite side
-        const fillLight = new THREE.DirectionalLight(0x8888aa, 0.3);
-        fillLight.position.set(-5, -3, -5);
-        this.scene.add(fillLight);
+        // Sun and Moon are created in _createObjects
+        // The Sun provides the main directional light
     }
 
     _createObjects() {
+        // Sun (provides main directional light)
+        this.sun = new Sun();
+        this.scene.add(this.sun.getObject());
+
+        // Moon
+        this.moon = new Moon();
+        this.scene.add(this.moon.getObject());
+
         // Earth
         this.earth = new Earth();
         this.scene.add(this.earth.getObject());
@@ -117,9 +121,6 @@ export class RocketScene {
         // Ground view (for low altitude)
         this.groundView = new GroundView();
         this.scene.add(this.groundView.getObject());
-
-        // Add launch site marker (Cape Canaveral)
-        this.earth.addMarker(28.562, -80.577, 0x00ff00);
     }
 
     _createStarfield() {
@@ -200,6 +201,14 @@ export class RocketScene {
         this.rocket.updateScale(this.camera);
         this.earth.updateMarkerScales(this.camera);
 
+        // Update celestial bodies
+        if (this.sun) {
+            this.sun.update(0.016);  // ~60fps
+        }
+        if (this.moon) {
+            this.moon.update(0.016);  // ~60fps
+        }
+
         // Slowly rotate Earth (optional)
         // this.earth.getObject().rotation.y += 0.0001;
 
@@ -261,6 +270,9 @@ export class RocketScene {
         this.rocket.getObject().visible = false;
         // Hide the orbital trajectory in ground view (ground view has its own yellow line)
         this.trajectory.getObject().visible = false;
+        // Hide celestial bodies in ground view
+        if (this.sun) this.sun.getObject().visible = false;
+        if (this.moon) this.moon.getObject().visible = false;
 
         // Set camera for ground view
         this.cameraController.setGroundViewMode(this.groundView.getObject());
@@ -276,6 +288,9 @@ export class RocketScene {
         this.rocket.getObject().visible = true;
         // Show the orbital trajectory (yellow line continues from ground view)
         this.trajectory.getObject().visible = true;
+        // Show celestial bodies in orbital view
+        if (this.sun) this.sun.getObject().visible = true;
+        if (this.moon) this.moon.getObject().visible = true;
 
         // Return to orbit mode with smooth transition (user controls camera)
         // Use the rocket object which now has updated position
@@ -319,6 +334,10 @@ export class RocketScene {
         this.earth.getObject().visible = true;
         this.rocket.getObject().visible = true;
         this.trajectory.getObject().visible = true;
+
+        // Make sure celestial bodies are visible
+        if (this.sun) this.sun.getObject().visible = true;
+        if (this.moon) this.moon.getObject().visible = true;
 
         this.cameraController.reset();
     }

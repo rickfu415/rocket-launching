@@ -687,6 +687,226 @@ label {
     padding: 10px 15px;
 }
 
+/* ========== Flight Info Panel (Left) ========== */
+.flight-info-section {
+    margin-bottom: 18px;
+}
+
+.flight-info-section h3 {
+    font-size: 0.75em;
+    color: #00d4ff;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid rgba(0, 212, 255, 0.2);
+}
+
+.flight-info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px 0;
+    font-size: 0.9em;
+}
+
+.flight-info-row .label {
+    color: #888;
+}
+
+.flight-info-row .value {
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-weight: 600;
+    color: #fff;
+}
+
+.flight-info-row .value.status-burning {
+    color: #ff6600;
+    text-shadow: 0 0 8px rgba(255, 102, 0, 0.5);
+}
+
+.flight-info-row .value.status-coast {
+    color: #888;
+}
+
+.flight-info-row .value.status-complete {
+    color: #00ff88;
+}
+
+/* Fuel bar in flight info */
+.flight-fuel-bar {
+    width: 100px;
+    height: 8px;
+    background: #1a1a2a;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.flight-fuel-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #00d4ff, #00ff88);
+    transition: width 0.2s;
+}
+
+/* Speed control buttons */
+.speed-control {
+    display: flex;
+    gap: 6px;
+}
+
+.speed-btn {
+    flex: 1;
+    padding: 8px 10px;
+    background: rgba(30, 30, 50, 0.8);
+    border: 1px solid #333;
+    border-radius: 6px;
+    color: #888;
+    font-size: 0.85em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.speed-btn:hover {
+    background: rgba(50, 50, 80, 0.8);
+    color: #fff;
+}
+
+.speed-btn.active {
+    background: rgba(0, 212, 255, 0.2);
+    border-color: #00d4ff;
+    color: #00d4ff;
+}
+
+.btn-menu {
+    margin-top: 20px !important;
+}
+
+/* ========== Action Buttons Panel (Bottom Center) ========== */
+#action-panel {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 8px;
+    padding: 8px 12px;
+    background: rgba(15, 15, 25, 0.95);
+    border: 1px solid #333;
+    border-radius: 10px;
+    z-index: 100;
+    backdrop-filter: blur(15px);
+    box-shadow: 0 6px 25px rgba(0, 0, 0, 0.5);
+}
+
+#action-panel.hidden {
+    display: none;
+}
+
+.action-btn {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 6px 12px;
+    min-width: 70px;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-weight: 600;
+}
+
+.action-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+.action-icon {
+    font-size: 0.9em;
+}
+
+.action-text {
+    font-size: 0.7em;
+    letter-spacing: 0.5px;
+}
+
+/* Launch button - Green */
+.action-btn-launch {
+    background: linear-gradient(135deg, #00cc66, #009944);
+    border-color: #00ff88;
+    color: #fff;
+    box-shadow: 0 2px 10px rgba(0, 204, 102, 0.4);
+}
+
+.action-btn-launch:hover:not(:disabled) {
+    background: linear-gradient(135deg, #00dd77, #00aa55);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0, 204, 102, 0.5);
+}
+
+.action-btn-launch:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+/* Pause button - Yellow/Orange */
+.action-btn-pause {
+    background: linear-gradient(135deg, #ff9900, #cc7700);
+    border-color: #ffaa00;
+    color: #fff;
+    box-shadow: 0 2px 10px rgba(255, 153, 0, 0.3);
+}
+
+.action-btn-pause:hover:not(:disabled) {
+    background: linear-gradient(135deg, #ffaa22, #dd8800);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(255, 153, 0, 0.4);
+}
+
+/* Abort button - Red */
+.action-btn-abort {
+    background: linear-gradient(135deg, #dd3333, #aa2222);
+    border-color: #ff4444;
+    color: #fff;
+    box-shadow: 0 2px 10px rgba(221, 51, 51, 0.3);
+}
+
+.action-btn-abort:hover:not(:disabled) {
+    background: linear-gradient(135deg, #ee4444, #bb3333);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(221, 51, 51, 0.5);
+}
+
+/* ========== Status Panel (Bottom) ========== */
+#status-panel {
+    position: absolute;
+    bottom: 70px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 8px 20px;
+    background: rgba(15, 15, 25, 0.9);
+    border: 1px solid #333;
+    border-radius: 20px;
+    z-index: 100;
+    backdrop-filter: blur(10px);
+    text-align: center;
+}
+
+#status-panel.hidden {
+    display: none;
+}
+
+#status-panel #status-text {
+    font-size: 0.9em;
+    font-weight: 600;
+    color: #00d4ff;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+}
+
 .btn-secondary {
     background: #444;
     color: #fff;

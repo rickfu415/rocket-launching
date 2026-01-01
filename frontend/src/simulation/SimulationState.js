@@ -50,6 +50,12 @@ export class SimulationState {
         this.stageFuelUsed = 0;
         this.twr = 0;  // Thrust to weight ratio
         this.mach = 0; // Mach number
+        this.radialVelocity = 0;  // Vertical velocity component
+
+        // Orbit status
+        this.inOrbit = false;  // True when orbit has been achieved (but sim still running)
+        this.orbitNumber = 0;  // Which orbit we're on (1, 2, 3, etc.)
+        this.orbitalPeriod = 0;  // Orbital period in seconds
 
         // Events
         this.events = [];
@@ -105,6 +111,18 @@ export class SimulationState {
         this.stageFuelUsed = data.stage_fuel_used || 0;
         this.twr = data.twr || 0;
         this.mach = data.mach || 0;
+        this.radialVelocity = data.radial_velocity || 0;
+
+        // Orbit status (keeps updating until simulation completes)
+        if (data.in_orbit !== undefined) {
+            this.inOrbit = data.in_orbit;
+        }
+        if (data.orbit_number !== undefined) {
+            this.orbitNumber = data.orbit_number;
+        }
+        if (data.orbital_period !== undefined) {
+            this.orbitalPeriod = data.orbital_period;
+        }
 
         // Compute scalar acceleration from 3D vector for backward compatibility
         this.acceleration = Math.sqrt(
@@ -215,6 +233,10 @@ export class SimulationState {
         this.stageFuelUsed = 0;
         this.twr = 0;
         this.mach = 0;
+        this.radialVelocity = 0;
+        this.inOrbit = false;
+        this.orbitNumber = 0;
+        this.orbitalPeriod = 0;
 
         this._notify('reset', {});
     }
